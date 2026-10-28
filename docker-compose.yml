@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgres:16
+    container_name: truckdispatch-db
+    environment:
+      POSTGRES_DB: truckdispatch
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+    ports:
+      - "5432:5432"
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+volumes:
+  dbdata:
