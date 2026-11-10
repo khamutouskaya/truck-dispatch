@@ -11,3 +11,7 @@ spring:
     open-in-view: false
   flyway:
     enabled: true
+  servlet:
+    encoding:
+      charset: UTF-8
+      force: true

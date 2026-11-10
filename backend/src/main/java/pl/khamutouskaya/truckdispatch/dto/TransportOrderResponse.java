@@ -25,7 +25,7 @@ public record TransportOrderResponse(
         String assignedDriverName,
         LocalDateTime createdAt
 ) {
-    // Вызывать внутри транзакции: пункты и водитель — LAZY-связи
+    // Wywoływać wewnątrz transakcji: punkty i kierowca to relacje LAZY
     public static TransportOrderResponse from(TransportOrder order) {
         Driver driver = order.getAssignedDriver();
         return new TransportOrderResponse(

@@ -10,12 +10,12 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import java.util.List;
 
-// Перехватывает исключения из всех контроллеров и превращает их
-// в единый формат ответа ProblemDetail (RFC 9457, application/problem+json)
+// Przechwytuje wyjątki ze wszystkich kontrolerów i zamienia je
+// na jednolity format odpowiedzi ProblemDetail (RFC 9457, application/problem+json)
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // Одна ошибка валидации: какое поле и что с ним не так
+    // Pojedynczy błąd walidacji: które pole i co jest z nim nie tak
     public record FieldViolation(String field, String message) {
     }
 
@@ -29,7 +29,7 @@ public class GlobalExceptionHandler {
         return problem(HttpStatus.CONFLICT, "Business rule violation", ex.getMessage());
     }
 
-    // Срабатывает, когда тело с @Valid @RequestBody не прошло аннотации Jakarta Validation
+    // Wywoływany, gdy ciało z @Valid @RequestBody nie przeszło walidacji adnotacji Jakarta Validation
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidation(MethodArgumentNotValidException ex) {
         List<FieldViolation> errors = ex.getBindingResult().getFieldErrors().stream()
@@ -42,14 +42,14 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
-    // Тело не удалось прочитать: битый JSON, неизвестное значение enum, неверный формат даты
+    // Nie udało się odczytać ciała: uszkodzony JSON, nieznana wartość enum, błędny format daty
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ProblemDetail handleUnreadable(HttpMessageNotReadableException ex) {
         return problem(HttpStatus.BAD_REQUEST, "Malformed request",
                 "Request body is not valid JSON or contains values of the wrong type");
     }
 
-    // Параметр в адресе неверного типа: /api/drivers/abc или ?status=UNKNOWN
+    // Parametr w adresie ma błędny typ: /api/drivers/abc lub ?status=UNKNOWN
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ProblemDetail handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
         return problem(HttpStatus.BAD_REQUEST, "Malformed request",

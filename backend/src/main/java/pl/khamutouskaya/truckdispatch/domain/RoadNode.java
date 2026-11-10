@@ -10,7 +10,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-// Пункт на карте: город или развязка (узел графа дорог)
+// Punkt na mapie: miasto lub węzeł drogowy (wierzchołek grafu dróg)
 @Entity
 @Table(name = "road_node")
 @Getter
@@ -31,7 +31,7 @@ public class RoadNode {
     @Column(name = "lon", nullable = false)
     private double lon;
 
-    // Время на погрузку/разгрузку в этом пункте по умолчанию, минуты
+    // Domyślny czas załadunku/rozładunku w tym punkcie, minuty
     @Column(name = "default_handling_min", nullable = false)
     private int defaultHandlingMin = 60;
 }

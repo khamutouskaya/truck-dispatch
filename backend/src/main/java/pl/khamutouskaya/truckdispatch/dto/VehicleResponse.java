@@ -13,7 +13,7 @@ public record VehicleResponse(
         Long driverId,
         String driverName
 ) {
-    // Вызывать внутри транзакции: driver — LAZY-связь
+    // Wywoływać wewnątrz transakcji: driver to relacja LAZY
     public static VehicleResponse from(Vehicle vehicle) {
         Driver driver = vehicle.getDriver();
         return new VehicleResponse(

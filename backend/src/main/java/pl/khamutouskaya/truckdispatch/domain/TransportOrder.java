@@ -17,7 +17,7 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
-// Заказ на перевозку (Order — зарезервированное слово SQL, поэтому TransportOrder)
+// Zlecenie transportowe (Order to słowo zastrzeżone w SQL, dlatego TransportOrder)
 @Entity
 @Table(name = "transport_order")
 @Getter
@@ -53,7 +53,7 @@ public class TransportOrder {
     @Column(name = "delivery_deadline", nullable = false)
     private LocalDateTime deliveryDeadline;
 
-    // Если не заданы — берётся default_handling_min из RoadNode
+    // Jeśli nie podano — przyjmowany jest default_handling_min z RoadNode
     @Column(name = "estimated_loading_min")
     private Integer estimatedLoadingMin;
 
@@ -64,7 +64,7 @@ public class TransportOrder {
     @Column(name = "status", nullable = false, length = 20)
     private OrderStatus status = OrderStatus.NEW;
 
-    // Пока заказ NEW — водителя нет
+    // Dopóki zlecenie ma status NEW — nie ma kierowcy
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assigned_driver_id")
     private Driver assignedDriver;

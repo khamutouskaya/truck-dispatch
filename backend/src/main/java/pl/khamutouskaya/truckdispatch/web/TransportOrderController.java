@@ -22,7 +22,7 @@ import pl.khamutouskaya.truckdispatch.service.TransportOrderService;
 
 import java.util.List;
 
-// DELETE нет намеренно: заказы хранятся как история, вместо удаления — cancel
+// Celowo brak DELETE: zlecenia są przechowywane jako historia, zamiast usuwania — cancel
 @RestController
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor

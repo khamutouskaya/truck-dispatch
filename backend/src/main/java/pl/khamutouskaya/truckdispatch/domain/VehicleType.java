@@ -1,9 +1,9 @@
 package pl.khamutouskaya.truckdispatch.domain;
 
 public enum VehicleType {
-    TILT,          // тентованный полуприцеп
-    REFRIGERATOR,  // рефрижератор
-    TANKER,        // цистерна
-    FLATBED,       // открытая платформа
-    CONTAINER      // контейнеровоз
+    TILT,          // naczepa plandekowa
+    REFRIGERATOR,  // chłodnia
+    TANKER,        // cysterna
+    FLATBED,       // otwarta platforma
+    CONTAINER      // podwozie do kontenerów
 }

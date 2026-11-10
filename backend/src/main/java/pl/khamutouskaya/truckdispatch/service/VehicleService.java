@@ -50,7 +50,7 @@ public class VehicleService {
             throw duplicateRegistration(request.registrationNumber());
         }
         applyRequest(vehicle, request);
-        // save не нужен: сущность managed, Hibernate сам запишет изменения при коммите
+        // save nie jest potrzebne: encja jest zarządzana (managed), Hibernate sam zapisze zmiany przy commicie
         return VehicleResponse.from(vehicle);
     }
 
@@ -72,7 +72,7 @@ public class VehicleService {
         vehicle.setDriver(resolveDriver(vehicle, request.driverId()));
     }
 
-    // Водитель должен существовать и не иметь другой машины
+    // Kierowca musi istnieć i nie może mieć innego pojazdu
     private Driver resolveDriver(Vehicle vehicle, Long driverId) {
         if (driverId == null) {
             return null;

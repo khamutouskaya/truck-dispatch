@@ -1,8 +1,8 @@
 package pl.khamutouskaya.truckdispatch.domain;
 
 public enum DriverStatus {
-    AVAILABLE,   // свободен, может взять заказ
-    ON_ROUTE,    // едет с заказом
-    RESTING,     // обязательный отдых
-    OFF_DUTY     // не на смене
+    AVAILABLE,   // wolny, może przyjąć zlecenie
+    ON_ROUTE,    // w trasie ze zleceniem
+    RESTING,     // obowiązkowy odpoczynek
+    OFF_DUTY     // poza służbą
 }

@@ -11,7 +11,7 @@ import java.util.List;
 
 public interface TransportOrderRepository extends JpaRepository<TransportOrder, Long> {
 
-    // Пункты и водитель подгружаются одним запросом — для списка в DTO
+    // Punkty i kierowca są pobierane jednym zapytaniem — na potrzeby listy w DTO
     @Override
     @EntityGraph(attributePaths = {"loadingNode", "unloadingNode", "assignedDriver"})
     List<TransportOrder> findAll(Sort sort);

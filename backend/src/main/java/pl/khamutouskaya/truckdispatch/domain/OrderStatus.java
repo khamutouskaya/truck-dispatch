@@ -1,9 +1,9 @@
 package pl.khamutouskaya.truckdispatch.domain;
 
 public enum OrderStatus {
-    NEW,          // создан, водитель не назначен
-    ASSIGNED,     // назначен водителю
-    IN_PROGRESS,  // выполняется
-    DONE,         // выполнен
-    CANCELLED     // отменён
+    NEW,          // utworzone, kierowca nieprzypisany
+    ASSIGNED,     // przypisane kierowcy
+    IN_PROGRESS,  // w realizacji
+    DONE,         // zrealizowane
+    CANCELLED     // anulowane
 }

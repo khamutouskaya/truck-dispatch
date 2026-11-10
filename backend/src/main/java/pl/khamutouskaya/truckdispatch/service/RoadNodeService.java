@@ -10,7 +10,7 @@ import pl.khamutouskaya.truckdispatch.repository.RoadNodeRepository;
 
 import java.util.List;
 
-// Пункты только читаются: их добавляют миграции Flyway
+// Punkty są tylko odczytywane: dodają je migracje Flyway
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)

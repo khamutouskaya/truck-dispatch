@@ -3,8 +3,8 @@ package pl.khamutouskaya.truckdispatch.dto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-// Только личные данные. Статус и положение меняются отдельными PATCH,
-// а счётчики времени вождения считает система
+// Tylko dane osobowe. Status i położenie zmieniane są osobnymi żądaniami PATCH,
+// a liczniki czasu jazdy oblicza system
 public record DriverRequest(
         @NotBlank(message = "First name is required")
         @Size(max = 50, message = "First name must be at most 50 characters")

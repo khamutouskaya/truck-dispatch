@@ -39,7 +39,7 @@ public class Vehicle {
     @Column(name = "volume_m3", nullable = false)
     private double volumeM3;
 
-    // Один водитель — одна машина; машина может быть без водителя
+    // Jeden kierowca — jeden pojazd; pojazd może nie mieć kierowcy
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "driver_id", unique = true)
     private Driver driver;

@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import pl.khamutouskaya.truckdispatch.domain.VehicleType;
 
-// Обёртки (Integer, Double), чтобы отсутствующее поле было null и его поймал @NotNull
+// Typy opakowujące (Integer, Double), aby brakujące pole było null i zostało wychwycone przez @NotNull
 public record VehicleRequest(
         @NotBlank(message = "Registration number is required")
         @Size(max = 15, message = "Registration number must be at most 15 characters")
@@ -26,7 +26,7 @@ public record VehicleRequest(
         @Positive(message = "Volume must be positive")
         Double volumeM3,
 
-        // Необязательно: машина может быть без водителя
+        // Opcjonalne: pojazd może nie mieć kierowcy
         Long driverId
 ) {
 }

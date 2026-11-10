@@ -7,7 +7,7 @@ import pl.khamutouskaya.truckdispatch.domain.VehicleType;
 
 import java.time.LocalDateTime;
 
-// Здесь только проверки формы. Бизнес-правила (сроки, пункты, вместимость) — в TransportOrderService
+// Tutaj tylko walidacja formy. Reguły biznesowe (terminy, punkty, ładowność) — w TransportOrderService
 public record TransportOrderRequest(
         @NotNull(message = "Loading node is required")
         Long loadingNodeId,
@@ -32,7 +32,7 @@ public record TransportOrderRequest(
         @NotNull(message = "Delivery deadline is required")
         LocalDateTime deliveryDeadline,
 
-        // Необязательные: если null, берётся default_handling_min пункта
+        // Opcjonalne: jeśli null, przyjmowany jest default_handling_min punktu
         @PositiveOrZero(message = "Estimated loading time must not be negative")
         Integer estimatedLoadingMin,
 

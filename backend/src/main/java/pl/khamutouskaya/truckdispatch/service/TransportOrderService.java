@@ -31,7 +31,7 @@ public class TransportOrderService {
     private final RoadNodeRepository roadNodeRepository;
     private final VehicleRepository vehicleRepository;
 
-    // status == null → все заказы
+    // status == null → wszystkie zlecenia
     public List<TransportOrderResponse> findAll(OrderStatus status) {
         List<TransportOrder> orders = status == null
                 ? transportOrderRepository.findAll(BY_LOADING_DEADLINE)
@@ -45,7 +45,7 @@ public class TransportOrderService {
         return TransportOrderResponse.from(getOrder(id));
     }
 
-    // Новый заказ всегда NEW и без водителя: назначает алгоритм
+    // Nowe zlecenie ma zawsze status NEW i nie ma kierowcy: przydziela go algorytm
     @Transactional
     public TransportOrderResponse create(TransportOrderRequest request) {
         TransportOrder order = new TransportOrder();
@@ -64,7 +64,7 @@ public class TransportOrderService {
         return TransportOrderResponse.from(order);
     }
 
-    // Заказы не удаляются физически: отмена сохраняет историю
+    // Zlecenia nie są usuwane fizycznie: anulowanie zachowuje historię
     @Transactional
     public TransportOrderResponse cancel(Long id) {
         TransportOrder order = getOrder(id);
@@ -81,7 +81,7 @@ public class TransportOrderService {
                 .orElseThrow(() -> new NotFoundException("Order", id));
     }
 
-    // Проверяет бизнес-правила и только потом переносит данные в сущность
+    // Sprawdza reguły biznesowe i dopiero potem przenosi dane do encji
     private void applyRequest(TransportOrder order, TransportOrderRequest request) {
         if (request.loadingNodeId().equals(request.unloadingNodeId())) {
             throw new ConflictException("Loading and unloading node must be different");
@@ -95,8 +95,8 @@ public class TransportOrderService {
         if (!request.deliveryDeadline().isAfter(request.loadingDeadline())) {
             throw new ConflictException("Delivery deadline must be after loading deadline");
         }
-        // Пока проверяем только, что такая машина в принципе есть в парке;
-        // свободна ли она и успеет ли — решает алгоритм назначения
+        // Na razie sprawdzamy tylko, czy taki pojazd w ogóle jest we flocie;
+        // czy jest wolny i czy zdąży — decyduje algorytm przydzielania
         boolean vehicleExists = vehicleRepository.existsByTypeAndCapacityKgGreaterThanEqualAndVolumeM3GreaterThanEqual(
                 request.requiredVehicleType(), request.cargoWeightKg(), request.cargoVolumeM3());
         if (!vehicleExists) {

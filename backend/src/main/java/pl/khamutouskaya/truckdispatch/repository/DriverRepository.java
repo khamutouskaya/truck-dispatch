@@ -9,7 +9,7 @@ import java.util.List;
 
 public interface DriverRepository extends JpaRepository<Driver, Long> {
 
-    // Spring Data строит запрос по имени метода: WHERE status = ?
+    // Spring Data buduje zapytanie na podstawie nazwy metody: WHERE status = ?
     List<Driver> findByStatus(DriverStatus status);
 
     List<Driver> findByStatus(DriverStatus status, Sort sort);

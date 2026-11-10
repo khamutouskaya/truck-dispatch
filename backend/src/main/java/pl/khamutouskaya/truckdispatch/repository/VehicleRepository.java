@@ -11,19 +11,19 @@ import java.util.Optional;
 
 public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
 
-    // Водитель подгружается тем же запросом (JOIN), чтобы не было N+1 запросов
+    // Kierowca jest pobierany tym samym zapytaniem (JOIN), aby uniknąć problemu N+1 zapytań
     @Override
     @EntityGraph(attributePaths = "driver")
     List<Vehicle> findAll(Sort sort);
 
     boolean existsByRegistrationNumber(String registrationNumber);
 
-    // Для PUT: такой номер есть у другой машины, не у этой
+    // Dla PUT: taki numer ma inny pojazd, a nie ten
     boolean existsByRegistrationNumberAndIdNot(String registrationNumber, Long id);
 
     Optional<Vehicle> findByDriverId(Long driverId);
 
-    // Есть ли хотя бы одна машина нужного типа, способная увезти груз
+    // Czy istnieje choć jeden pojazd danego typu zdolny przewieźć ładunek
     boolean existsByTypeAndCapacityKgGreaterThanEqualAndVolumeM3GreaterThanEqual(
             VehicleType type, int capacityKg, double volumeM3);
 }

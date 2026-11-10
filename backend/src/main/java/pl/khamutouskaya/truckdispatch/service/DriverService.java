@@ -34,7 +34,7 @@ public class DriverService {
     private final VehicleRepository vehicleRepository;
     private final TransportOrderRepository transportOrderRepository;
 
-    // status == null → все водители
+    // status == null → wszyscy kierowcy
     public List<DriverResponse> findAll(DriverStatus status) {
         List<Driver> drivers = status == null
                 ? driverRepository.findAll(BY_NAME)
@@ -48,7 +48,7 @@ public class DriverService {
         return DriverResponse.from(getDriver(id));
     }
 
-    // Новый водитель: AVAILABLE, положение неизвестно, счётчики = 0 (значения по умолчанию в сущности)
+    // Nowy kierowca: AVAILABLE, położenie nieznane, liczniki = 0 (wartości domyślne w encji)
     @Transactional
     public DriverResponse create(DriverRequest request) {
         Driver driver = new Driver();
@@ -87,14 +87,14 @@ public class DriverService {
         if (transportOrderRepository.existsByAssignedDriverIdAndStatusIn(id, ACTIVE_ORDER_STATUSES)) {
             throw new ConflictException("Driver with id " + id + " has active orders (ASSIGNED or IN_PROGRESS)");
         }
-        // Выполненные и отменённые заказы ссылаются на водителя (внешний ключ) и хранят историю,
-        // поэтому такого водителя не удаляем — его можно перевести в OFF_DUTY
+        // Zrealizowane i anulowane zlecenia odwołują się do kierowcy (klucz obcy) i przechowują historię,
+        // dlatego takiego kierowcy nie usuwamy — można go przenieść do OFF_DUTY
         if (transportOrderRepository.existsByAssignedDriverId(id)) {
             throw new ConflictException("Driver with id " + id
                     + " has order history and cannot be deleted; set status OFF_DUTY instead");
         }
 
-        // Машина остаётся в парке, но без водителя
+        // Pojazd zostaje we flocie, ale bez kierowcy
         vehicleRepository.findByDriverId(id).ifPresent(vehicle -> vehicle.setDriver(null));
         driverRepository.delete(driver);
     }

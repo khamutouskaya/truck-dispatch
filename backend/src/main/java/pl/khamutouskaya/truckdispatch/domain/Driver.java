@@ -38,7 +38,7 @@ public class Driver {
     @Column(name = "status", nullable = false, length = 20)
     private DriverStatus status = DriverStatus.AVAILABLE;
 
-    // Текущее положение может быть неизвестно — поэтому обёртки
+    // Bieżące położenie może być nieznane — dlatego typy opakowujące
     @Column(name = "current_lat")
     private Double currentLat;
 
@@ -52,7 +52,7 @@ public class Driver {
     @Column(name = "location_source", length = 20)
     private LocationSource locationSource;
 
-    // Счётчики времени вождения (Регламент ЕС 561/2006), минуты
+    // Liczniki czasu jazdy (rozporządzenie UE 561/2006), minuty
     @Column(name = "driving_time_today_min", nullable = false)
     private int drivingTimeTodayMin = 0;
 

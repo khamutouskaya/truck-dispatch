@@ -28,7 +28,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-// Юнит-тест без базы и без Spring: репозитории подменены моками Mockito
+// Test jednostkowy bez bazy danych i bez Springa: repozytoria zastąpione mockami Mockito
 @ExtendWith(MockitoExtension.class)
 class TransportOrderServiceTest {
 
@@ -62,7 +62,7 @@ class TransportOrderServiceTest {
         when(roadNodeRepository.findById(GDANSK_ID)).thenReturn(Optional.of(gdansk));
         when(vehicleRepository.existsByTypeAndCapacityKgGreaterThanEqualAndVolumeM3GreaterThanEqual(
                 VehicleType.TILT, 18000, 70.0)).thenReturn(true);
-        // save возвращает тот же объект, который ему передали
+        // save zwraca ten sam obiekt, który otrzymał
         when(transportOrderRepository.save(any(TransportOrder.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -124,6 +124,57 @@ class TransportOrderServiceTest {
                 .isInstanceOf(NotFoundException.class)
                 .hasMessageContaining("999");
         verify(transportOrderRepository, never()).save(any());
+    }
+
+    @Test
+    void throwsNotFoundForNonExistentOrder() {
+        when(transportOrderRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> transportOrderService.findById(999L))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Order with id 999 not found");
+    }
+
+    @Test
+    void throwsNotFoundWhenCancellingNonExistentOrder() {
+        when(transportOrderRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> transportOrderService.cancel(999L))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Order with id 999 not found");
+    }
+
+    @Test
+    void rejectsCancellingOrderThatIsAlreadyDone() {
+        TransportOrder order = existingOrder(10L, OrderStatus.DONE);
+        when(transportOrderRepository.findById(10L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> transportOrderService.cancel(10L))
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("order 10 is DONE");
+        // Status nie powinien się zmienić
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.DONE);
+    }
+
+    @Test
+    void rejectsEditingOrderThatIsNotNew() {
+        TransportOrder order = existingOrder(10L, OrderStatus.ASSIGNED);
+        when(transportOrderRepository.findById(10L)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> transportOrderService.update(10L, validRequest()))
+                .isInstanceOf(ConflictException.class)
+                .hasMessageContaining("order 10 is ASSIGNED");
+        // Nie doszło do sprawdzania punktów ani pojazdów
+        verify(roadNodeRepository, never()).findById(any());
+    }
+
+    private TransportOrder existingOrder(long id, OrderStatus status) {
+        TransportOrder order = new TransportOrder();
+        order.setId(id);
+        order.setLoadingNode(warszawa);
+        order.setUnloadingNode(gdansk);
+        order.setStatus(status);
+        return order;
     }
 
     private TransportOrderRequest validRequest() {
