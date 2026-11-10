@@ -32,3 +32,6 @@ target/
 
 # macOS
 .DS_Store
+
+# Road graph generator: cached openrouteservice responses
+tools/road-graph/cache/
