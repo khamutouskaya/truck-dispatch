@@ -69,6 +69,8 @@ public class VehicleService {
         vehicle.setType(request.type());
         vehicle.setCapacityKg(request.capacityKg());
         vehicle.setVolumeM3(request.volumeM3());
+        vehicle.setHeightM(request.heightM());
+        vehicle.setEmptyWeightKg(request.emptyWeightKg());
         vehicle.setDriver(resolveDriver(vehicle, request.driverId()));
     }
 

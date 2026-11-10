@@ -26,6 +26,14 @@ public record VehicleRequest(
         @Positive(message = "Volume must be positive")
         Double volumeM3,
 
+        @NotNull(message = "Height is required")
+        @Positive(message = "Height must be positive")
+        Double heightM,
+
+        @NotNull(message = "Empty weight is required")
+        @Positive(message = "Empty weight must be positive")
+        Integer emptyWeightKg,
+
         // Opcjonalne: pojazd może nie mieć kierowcy
         Long driverId
 ) {

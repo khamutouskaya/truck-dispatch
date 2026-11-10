@@ -10,6 +10,8 @@ public record VehicleResponse(
         VehicleType type,
         int capacityKg,
         double volumeM3,
+        double heightM,
+        int emptyWeightKg,
         Long driverId,
         String driverName
 ) {
@@ -22,6 +24,8 @@ public record VehicleResponse(
                 vehicle.getType(),
                 vehicle.getCapacityKg(),
                 vehicle.getVolumeM3(),
+                vehicle.getHeightM(),
+                vehicle.getEmptyWeightKg(),
                 driver == null ? null : driver.getId(),
                 driver == null ? null : driver.getFirstName() + " " + driver.getLastName()
         );
