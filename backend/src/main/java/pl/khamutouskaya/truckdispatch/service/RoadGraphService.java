@@ -61,16 +61,20 @@ public class RoadGraphService {
         return current;
     }
 
-    // Węzły, do których nie da się dojechać z pierwszego węzła albo z których nie da się do niego wrócić
+    // Węzły spoza największej silnie spójnej składowej. Punkt odniesienia nie może być „pierwszy z brzegu”:
+    // kolejność graph.nodes() jest dowolna, a gdyby trafił się węzeł odizolowany, za problem uznalibyśmy resztę grafu.
     private static String problemNodeNames(RoadGraph graph) {
-        if (graph.nodeCount() == 0) {
-            return "";
+        Set<Long> ok = Set.of();
+        for (GraphNode node : graph.nodes()) {
+            Set<Long> component = new HashSet<>(graph.reachableFrom(node.id()));
+            component.retainAll(graph.canReach(node.id()));
+            if (component.size() > ok.size()) {
+                ok = component;
+            }
         }
-        long start = graph.nodes().iterator().next().id();
-        Set<Long> ok = new HashSet<>(graph.reachableFrom(start));
-        ok.retainAll(graph.canReach(start));
+        Set<Long> largestComponent = ok;
         return graph.nodes().stream()
-                .filter(node -> !ok.contains(node.id()))
+                .filter(node -> !largestComponent.contains(node.id()))
                 .map(GraphNode::name)
                 .sorted()
                 .collect(Collectors.joining(", "));
