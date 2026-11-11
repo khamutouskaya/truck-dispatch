@@ -15,3 +15,12 @@ spring:
     encoding:
       charset: UTF-8
       force: true
+
+# Wagi kryteriów algorytmu przydziału (suma = 1), docs/karta-i-algorytm.md, krok 9
+assignment:
+  weights:
+    distance-to-loading: 0.25      # K1: km do załadunku (mniej = lepiej)
+    time-to-loading: 0.30          # K2: godziny do przyjazdu na załadunek (mniej = lepiej)
+    remaining-driving-today: 0.15  # K3: zapas jazdy na dziś po zleceniu (więcej = lepiej)
+    stop-count: 0.15               # K4: liczba przerw i odpoczynków (mniej = lepiej)
+    vehicle-utilization: 0.15      # K5: masa ładunku / ładowność (więcej = lepiej)

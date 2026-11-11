@@ -45,7 +45,7 @@ public class TransportOrderController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Create order (always NEW, without driver)")
+    @Operation(summary = "Create order and run automatic assignment (result: ASSIGNED or NEW, details: GET /{id}/assignment)")
     public TransportOrderResponse create(@Valid @RequestBody TransportOrderRequest request) {
         return transportOrderService.create(request);
     }

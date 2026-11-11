@@ -44,6 +44,9 @@ class TransportOrderServiceTest {
     @Mock
     private VehicleRepository vehicleRepository;
 
+    @Mock
+    private AssignmentService assignmentService;
+
     @InjectMocks
     private TransportOrderService transportOrderService;
 
@@ -62,9 +65,13 @@ class TransportOrderServiceTest {
         when(roadNodeRepository.findById(GDANSK_ID)).thenReturn(Optional.of(gdansk));
         when(vehicleRepository.existsByTypeAndCapacityKgGreaterThanEqualAndVolumeM3GreaterThanEqual(
                 VehicleType.TILT, 18000, 70.0)).thenReturn(true);
-        // save zwraca ten sam obiekt, który otrzymał
+        // save zwraca ten sam obiekt, który otrzymał, z nadanym id
         when(transportOrderRepository.save(any(TransportOrder.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+                .thenAnswer(invocation -> {
+                    TransportOrder saved = invocation.getArgument(0);
+                    saved.setId(42L);
+                    return saved;
+                });
 
         TransportOrderResponse response = transportOrderService.create(validRequest());
 
@@ -74,6 +81,8 @@ class TransportOrderServiceTest {
         assertThat(response.unloadingNodeName()).isEqualTo("Gdańsk");
         assertThat(response.cargoWeightKg()).isEqualTo(18000);
         verify(transportOrderRepository).save(any(TransportOrder.class));
+        // Algorytm przydziału uruchamia się automatycznie (tu mock — dlatego status zostaje NEW)
+        verify(assignmentService).assign(42L);
     }
 
     @Test

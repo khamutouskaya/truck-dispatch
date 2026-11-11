@@ -30,6 +30,7 @@ public class TransportOrderService {
     private final TransportOrderRepository transportOrderRepository;
     private final RoadNodeRepository roadNodeRepository;
     private final VehicleRepository vehicleRepository;
+    private final AssignmentService assignmentService;
 
     // status == null → wszystkie zlecenia
     public List<TransportOrderResponse> findAll(OrderStatus status) {
@@ -45,12 +46,15 @@ public class TransportOrderService {
         return TransportOrderResponse.from(getOrder(id));
     }
 
-    // Nowe zlecenie ma zawsze status NEW i nie ma kierowcy: przydziela go algorytm
+    // Nowe zlecenie powstaje jako NEW i od razu uruchamiany jest algorytm przydziału — w tej samej transakcji.
+    // Wynik widać w odpowiedzi: ASSIGNED z kierowcą albo NEW (nikt nie przeszedł filtrów, powody — GET .../assignment)
     @Transactional
     public TransportOrderResponse create(TransportOrderRequest request) {
         TransportOrder order = new TransportOrder();
         applyRequest(order, request);
-        return TransportOrderResponse.from(transportOrderRepository.save(order));
+        TransportOrder saved = transportOrderRepository.save(order);
+        assignmentService.assign(saved.getId());
+        return TransportOrderResponse.from(saved);
     }
 
     @Transactional

@@ -68,7 +68,7 @@ public final class CandidateScorer {
     }
 
     // Wagi muszą sumować się do 1, a nazwy kryteriów być unikalne (są kluczami w wyjaśnieniu)
-    static void validateWeights(List<WeightedCriterion> criteria) {
+    public static void validateWeights(List<WeightedCriterion> criteria) {
         if (criteria.isEmpty()) {
             throw new IllegalArgumentException("At least one criterion is required");
         }
