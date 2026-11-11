@@ -10,8 +10,10 @@ import pl.khamutouskaya.truckdispatch.algorithm.assignment.CandidateScore;
 import pl.khamutouskaya.truckdispatch.algorithm.assignment.CandidateScorer;
 import pl.khamutouskaya.truckdispatch.algorithm.assignment.RejectionReason;
 import pl.khamutouskaya.truckdispatch.algorithm.assignment.WeightedCriterion;
+import pl.khamutouskaya.truckdispatch.algorithm.graph.EdgeTimeCalculator;
 import pl.khamutouskaya.truckdispatch.algorithm.graph.FirstMile;
 import pl.khamutouskaya.truckdispatch.algorithm.graph.GeoDistance;
+import pl.khamutouskaya.truckdispatch.algorithm.graph.GraphEdge;
 import pl.khamutouskaya.truckdispatch.algorithm.graph.GraphNode;
 import pl.khamutouskaya.truckdispatch.algorithm.graph.Route;
 import pl.khamutouskaya.truckdispatch.algorithm.graph.VehicleProfile;
@@ -23,7 +25,9 @@ import pl.khamutouskaya.truckdispatch.config.AssignmentWeightsProperties;
 import pl.khamutouskaya.truckdispatch.domain.AssignmentResult;
 import pl.khamutouskaya.truckdispatch.domain.Driver;
 import pl.khamutouskaya.truckdispatch.domain.DriverStatus;
+import pl.khamutouskaya.truckdispatch.domain.OrderRouteEdge;
 import pl.khamutouskaya.truckdispatch.domain.OrderStatus;
+import pl.khamutouskaya.truckdispatch.domain.RouteLeg;
 import pl.khamutouskaya.truckdispatch.domain.TransportOrder;
 import pl.khamutouskaya.truckdispatch.domain.Vehicle;
 import pl.khamutouskaya.truckdispatch.dto.AssignmentDecision;
@@ -36,6 +40,8 @@ import pl.khamutouskaya.truckdispatch.exception.ConflictException;
 import pl.khamutouskaya.truckdispatch.exception.NotFoundException;
 import pl.khamutouskaya.truckdispatch.repository.AssignmentResultRepository;
 import pl.khamutouskaya.truckdispatch.repository.DriverRepository;
+import pl.khamutouskaya.truckdispatch.repository.OrderRouteEdgeRepository;
+import pl.khamutouskaya.truckdispatch.repository.RoadEdgeRepository;
 import pl.khamutouskaya.truckdispatch.repository.TransportOrderRepository;
 import pl.khamutouskaya.truckdispatch.repository.VehicleRepository;
 import tools.jackson.databind.json.JsonMapper;
@@ -65,6 +71,8 @@ public class AssignmentService {
     private final DriverRepository driverRepository;
     private final VehicleRepository vehicleRepository;
     private final AssignmentResultRepository assignmentResultRepository;
+    private final OrderRouteEdgeRepository orderRouteEdgeRepository;
+    private final RoadEdgeRepository roadEdgeRepository;
     private final RoadGraphService roadGraphService;
     private final RouteService routeService;
     private final AssignmentWeightsProperties weights;
@@ -75,17 +83,19 @@ public class AssignmentService {
      * Podgląd: ranking i powody odrzucenia bez zmiany danych (nic nie jest zapisywane).
      */
     public AssignmentDecision evaluate(Long orderId) {
-        return evaluate(findNewOrder(orderId), LocalDateTime.now(clock));
+        return evaluate(findNewOrder(orderId), LocalDateTime.now(clock)).decision();
     }
 
     /**
-     * Przydział w jednej transakcji: zlecenie → ASSIGNED, kierowca → ON_ROUTE, zapis AssignmentResult.
+     * Przydział w jednej transakcji: zlecenie → ASSIGNED, kierowca → ON_ROUTE, zapis AssignmentResult
+     * i zaplanowanej trasy zwycięzcy (order_route_edge — dla symulatora i samouczenia).
      * Gdy nikt nie przeszedł filtrów, zlecenie zostaje NEW, a decyzja z powodami i tak jest zapisywana.
      */
     @Transactional
     public AssignmentDecision assign(Long orderId) {
         TransportOrder order = findNewOrder(orderId);
-        AssignmentDecision decision = evaluate(order, LocalDateTime.now(clock));
+        Evaluation evaluation = evaluate(order, LocalDateTime.now(clock));
+        AssignmentDecision decision = evaluation.decision();
 
         AssignmentResult result = new AssignmentResult();
         result.setOrder(order);
@@ -98,6 +108,7 @@ public class AssignmentService {
             driver.setStatus(DriverStatus.ON_ROUTE);
             result.setDriver(driver);
             result.setScore(decision.ranking().getFirst().score());
+            savePlannedRoute(order, evaluation.detailsByDriverId().get(driver.getId()));
         }
         result.setDetails(jsonMapper.writeValueAsString(decision));
         assignmentResultRepository.save(result);
@@ -119,7 +130,11 @@ public class AssignmentService {
 
     // --- Obliczenie decyzji ---
 
-    AssignmentDecision evaluate(TransportOrder order, LocalDateTime now) {
+    // Decyzja + szczegóły kandydatów (trasy), których nie ma w JSON, a są potrzebne do zapisu trasy zwycięzcy
+    private record Evaluation(AssignmentDecision decision, Map<Long, CandidateDetails> detailsByDriverId) {
+    }
+
+    private Evaluation evaluate(TransportOrder order, LocalDateTime now) {
         List<WeightedCriterion> criteria = weights.toCriteria();
         Map<Long, Vehicle> vehicleByDriverId = vehiclesByDriverId();
 
@@ -155,7 +170,9 @@ public class AssignmentService {
         List<CriterionInfo> criterionInfos = criteria.stream()
                 .map(wc -> new CriterionInfo(wc.criterion().name(), wc.weight(), wc.criterion().higherIsBetter()))
                 .toList();
-        return new AssignmentDecision(order.getId(), now, assignedDriverId, criterionInfos, ranking, rejected);
+        return new Evaluation(
+                new AssignmentDecision(order.getId(), now, assignedDriverId, criterionInfos, ranking, rejected),
+                detailsByDriverId);
     }
 
     // Wynik dla jednego kierowcy po szybkim odsiewie: albo kandydat, albo powód odrzucenia
@@ -165,8 +182,10 @@ public class AssignmentService {
         }
     }
 
-    // Dane potrzebne tylko do wyjaśnienia (nie wchodzą do oceny)
-    private record CandidateDetails(String vehicleRegistration, TripSummary trip) {
+    // Dane, które nie wchodzą do oceny: do wyjaśnienia (trip) i do zapisu trasy zwycięzcy
+    private record CandidateDetails(String vehicleRegistration, TripSummary trip,
+                                    Route toLoading, VehicleProfile emptyProfile,
+                                    Route toUnloading, VehicleProfile loadedProfile) {
     }
 
     private CandidateEvaluation evaluateCandidate(Driver driver, Vehicle vehicle, TransportOrder order,
@@ -209,7 +228,9 @@ public class AssignmentService {
         TripSummary trip = new TripSummary(distanceToLoadingKm, firstMileKm, toUnloading.get().distanceKm(),
                 plan.emptyDrivingMin(), plan.loadedDrivingMin(), simulation.arrivalAtLoading(), simulation.finish(),
                 simulation.breakCount(), simulation.restCount(), simulation.endState().remainingDrivingTodayMin());
-        return new CandidateEvaluation(candidate, new CandidateDetails(vehicle.getRegistrationNumber(), trip), null);
+        CandidateDetails details = new CandidateDetails(vehicle.getRegistrationNumber(), trip,
+                toLoading.get(), empty, toUnloading.get(), loaded);
+        return new CandidateEvaluation(candidate, details, null);
     }
 
     private static RankedCandidate rankedCandidate(int rank, CandidateScore score, List<WeightedCriterion> criteria,
@@ -224,6 +245,29 @@ public class AssignmentService {
         Candidate c = score.candidate();
         return new RankedCandidate(rank, c.driverId(), c.driverName(), details.vehicleRegistration(), score.score(),
                 rank == 1, values, details.trip());
+    }
+
+    // Trasa zwycięzcy krawędź po krawędzi: prognoza z delayFactor i czas bazowy (bez niego), dla pojazdu pustego/z ładunkiem
+    private void savePlannedRoute(TransportOrder order, CandidateDetails details) {
+        int seq = 0;
+        for (GraphEdge edge : details.toLoading().edges()) {
+            orderRouteEdgeRepository.save(routeEdge(order, seq++, RouteLeg.EMPTY, edge, details.emptyProfile()));
+        }
+        for (GraphEdge edge : details.toUnloading().edges()) {
+            orderRouteEdgeRepository.save(routeEdge(order, seq++, RouteLeg.LOADED, edge, details.loadedProfile()));
+        }
+    }
+
+    private OrderRouteEdge routeEdge(TransportOrder order, int seq, RouteLeg leg, GraphEdge edge,
+                                     VehicleProfile vehicle) {
+        OrderRouteEdge routeEdge = new OrderRouteEdge();
+        routeEdge.setOrder(order);
+        routeEdge.setSeq(seq);
+        routeEdge.setLeg(leg);
+        routeEdge.setEdge(roadEdgeRepository.getReferenceById(edge.id())); // bez zapytania SELECT — tylko klucz obcy
+        routeEdge.setPlannedTimeMin(EdgeTimeCalculator.travelTimeMin(edge, vehicle));
+        routeEdge.setBaseTimeMin(EdgeTimeCalculator.baseTravelTimeMin(edge, vehicle));
+        return routeEdge;
     }
 
     // --- Pomocnicze ---

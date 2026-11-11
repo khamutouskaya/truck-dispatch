@@ -5,6 +5,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.khamutouskaya.truckdispatch.domain.Driver;
+import pl.khamutouskaya.truckdispatch.domain.DriverLocation;
 import pl.khamutouskaya.truckdispatch.domain.DriverStatus;
 import pl.khamutouskaya.truckdispatch.domain.LocationSource;
 import pl.khamutouskaya.truckdispatch.domain.OrderStatus;
@@ -14,6 +15,7 @@ import pl.khamutouskaya.truckdispatch.dto.DriverResponse;
 import pl.khamutouskaya.truckdispatch.dto.DriverStatusRequest;
 import pl.khamutouskaya.truckdispatch.exception.ConflictException;
 import pl.khamutouskaya.truckdispatch.exception.NotFoundException;
+import pl.khamutouskaya.truckdispatch.repository.DriverLocationRepository;
 import pl.khamutouskaya.truckdispatch.repository.DriverRepository;
 import pl.khamutouskaya.truckdispatch.repository.TransportOrderRepository;
 import pl.khamutouskaya.truckdispatch.repository.VehicleRepository;
@@ -31,6 +33,7 @@ public class DriverService {
     private static final Set<OrderStatus> ACTIVE_ORDER_STATUSES = Set.of(OrderStatus.ASSIGNED, OrderStatus.IN_PROGRESS);
 
     private final DriverRepository driverRepository;
+    private final DriverLocationRepository driverLocationRepository;
     private final VehicleRepository vehicleRepository;
     private final TransportOrderRepository transportOrderRepository;
 
@@ -70,6 +73,15 @@ public class DriverService {
         driver.setCurrentLon(request.lon());
         driver.setLocationSource(LocationSource.MANUAL);
         driver.setLocationUpdatedAt(LocalDateTime.now());
+
+        // Każda zmiana położenia trafia też do historii
+        DriverLocation location = new DriverLocation();
+        location.setDriver(driver);
+        location.setLat(request.lat());
+        location.setLon(request.lon());
+        location.setRecordedAt(driver.getLocationUpdatedAt());
+        location.setSource(LocationSource.MANUAL);
+        driverLocationRepository.save(location);
         return DriverResponse.from(driver);
     }
 

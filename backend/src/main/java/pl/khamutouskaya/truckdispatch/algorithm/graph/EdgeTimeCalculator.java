@@ -56,7 +56,12 @@ public final class EdgeTimeCalculator {
 
     // Czas przejazdu krawędzi [min], bez zaokrąglania (zaokrągla się dopiero przy wyświetlaniu)
     public static double travelTimeMin(GraphEdge edge, VehicleProfile vehicle) {
-        return edge.distanceKm() / effectiveSpeedKmh(edge, vehicle) * MINUTES_PER_HOUR * edge.delayFactor();
+        return baseTravelTimeMin(edge, vehicle) * edge.delayFactor();
+    }
+
+    // Czas „z samej formuły”, bez poprawki delayFactor [min] — mianownik w samouczeniu (fakt / czas bazowy)
+    public static double baseTravelTimeMin(GraphEdge edge, VehicleProfile vehicle) {
+        return edge.distanceKm() / effectiveSpeedKmh(edge, vehicle) * MINUTES_PER_HOUR;
     }
 
     // Krawędź zamknięta, jeśli pojazd jest wyższy lub cięższy niż dopuszcza odcinek (null = brak ograniczenia).

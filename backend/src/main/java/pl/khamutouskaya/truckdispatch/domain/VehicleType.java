@@ -1,6 +1,8 @@
 package pl.khamutouskaya.truckdispatch.domain;
 
-public enum VehicleType {
+public enum
+
+VehicleType {
     TILT,          // naczepa plandekowa
     REFRIGERATOR,  // chłodnia
     TANKER,        // cysterna

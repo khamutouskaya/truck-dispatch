@@ -57,6 +57,8 @@ class EdgeTimeCalculatorTest {
 
         // 101,25 × 1,2 = 121,5 min
         assertThat(EdgeTimeCalculator.travelTimeMin(slow, EMPTY_TRUCK)).isCloseTo(121.5, within(EPS));
+        // Czas bazowy (do samouczenia) — bez poprawki delayFactor
+        assertThat(EdgeTimeCalculator.baseTravelTimeMin(slow, EMPTY_TRUCK)).isCloseTo(101.25, within(EPS));
     }
 
     @ParameterizedTest

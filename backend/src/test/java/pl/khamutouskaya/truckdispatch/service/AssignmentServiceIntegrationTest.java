@@ -7,7 +7,9 @@ import org.springframework.transaction.annotation.Transactional;
 import pl.khamutouskaya.truckdispatch.algorithm.assignment.RejectionReason;
 import pl.khamutouskaya.truckdispatch.domain.AssignmentResult;
 import pl.khamutouskaya.truckdispatch.domain.DriverStatus;
+import pl.khamutouskaya.truckdispatch.domain.OrderRouteEdge;
 import pl.khamutouskaya.truckdispatch.domain.OrderStatus;
+import pl.khamutouskaya.truckdispatch.domain.RouteLeg;
 import pl.khamutouskaya.truckdispatch.domain.RoadNode;
 import pl.khamutouskaya.truckdispatch.domain.TransportOrder;
 import pl.khamutouskaya.truckdispatch.domain.VehicleType;
@@ -18,6 +20,7 @@ import pl.khamutouskaya.truckdispatch.exception.ConflictException;
 import pl.khamutouskaya.truckdispatch.exception.NotFoundException;
 import pl.khamutouskaya.truckdispatch.repository.AssignmentResultRepository;
 import pl.khamutouskaya.truckdispatch.repository.DriverRepository;
+import pl.khamutouskaya.truckdispatch.repository.OrderRouteEdgeRepository;
 import pl.khamutouskaya.truckdispatch.repository.RoadNodeRepository;
 import pl.khamutouskaya.truckdispatch.repository.TransportOrderRepository;
 import tools.jackson.databind.json.JsonMapper;
@@ -47,6 +50,7 @@ class AssignmentServiceIntegrationTest {
     @Autowired private DriverRepository driverRepository;
     @Autowired private AssignmentResultRepository assignmentResultRepository;
     @Autowired private JsonMapper jsonMapper;
+    @Autowired private OrderRouteEdgeRepository orderRouteEdgeRepository;
 
     private RoadNode node(String name) {
         return roadNodeRepository.findAll().stream().filter(n -> n.getName().equals(name)).findFirst().orElseThrow();
@@ -115,6 +119,31 @@ class AssignmentServiceIntegrationTest {
     }
 
     @Test
+    void savesPlannedRouteOfWinner() {
+        TransportOrder order = newOrder(6);
+
+        AssignmentDecision decision = assignmentService.assign(order.getId());
+        List<OrderRouteEdge> route = orderRouteEdgeRepository.findByOrderIdOrderBySeq(order.getId());
+
+        // Kierowca 1 stoi w Warszawie (= załadunek): brak odcinka EMPTY, cała trasa to Warszawa → Gdańsk
+        assertThat(route).isNotEmpty();
+        assertThat(route).extracting(OrderRouteEdge::getLeg).containsOnly(RouteLeg.LOADED);
+        assertThat(route).extracting(OrderRouteEdge::getSeq)
+                .containsExactlyElementsOf(java.util.stream.IntStream.range(0, route.size()).boxed().toList());
+        assertThat(route.getFirst().getEdge().getFromNode().getName()).isEqualTo("Warszawa");
+        assertThat(route.getLast().getEdge().getToNode().getName()).isEqualTo("Gdańsk");
+        // Kolejne krawędzie się łączą
+        for (int i = 1; i < route.size(); i++) {
+            assertThat(route.get(i).getEdge().getFromNode().getId())
+                    .isEqualTo(route.get(i - 1).getEdge().getToNode().getId());
+        }
+        // Suma prognoz = czas jazdy z ładunkiem z decyzji; delayFactor jeszcze wszędzie 1.0 → prognoza = czas bazowy
+        double plannedSum = route.stream().mapToDouble(OrderRouteEdge::getPlannedTimeMin).sum();
+        assertThat(plannedSum).isCloseTo(decision.ranking().getFirst().trip().loadedDrivingMin(), within(1e-6));
+        assertThat(route).allSatisfy(e -> assertThat(e.getBaseTimeMin()).isCloseTo(e.getPlannedTimeMin(), within(1e-9)));
+    }
+
+    @Test
     void orderStaysNewWhenNobodyCanMakeIt() {
         // Termin załadunku minął godzinę temu — nikt nie zdąży, ale decyzja z powodami i tak jest zapisana
         TransportOrder order = newOrder(-1);
@@ -129,6 +158,7 @@ class AssignmentServiceIntegrationTest {
         AssignmentResult saved = assignmentResultRepository.findByOrderIdOrderByCreatedAtDescIdDesc(order.getId()).getFirst();
         assertThat(saved.getDriver()).isNull();
         assertThat(saved.getScore()).isNull();
+        assertThat(orderRouteEdgeRepository.findByOrderIdOrderBySeq(order.getId())).isEmpty();
     }
 
     @Test
