@@ -19,6 +19,10 @@ public interface TransportOrderRepository extends JpaRepository<TransportOrder, 
     @EntityGraph(attributePaths = {"loadingNode", "unloadingNode", "assignedDriver"})
     List<TransportOrder> findByStatus(OrderStatus status, Sort sort);
 
+    // Zlecenia w realizacji (dla symulatora) — punkty i kierowca jednym zapytaniem
+    @EntityGraph(attributePaths = {"loadingNode", "unloadingNode", "assignedDriver"})
+    List<TransportOrder> findByStatusIn(Collection<OrderStatus> statuses, Sort sort);
+
     boolean existsByAssignedDriverIdAndStatusIn(Long driverId, Collection<OrderStatus> statuses);
 
     boolean existsByAssignedDriverId(Long driverId);

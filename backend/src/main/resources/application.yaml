@@ -24,3 +24,16 @@ assignment:
     remaining-driving-today: 0.15  # K3: zapas jazdy na dziś po zleceniu (więcej = lepiej)
     stop-count: 0.15               # K4: liczba przerw i odpoczynków (mniej = lepiej)
     vehicle-utilization: 0.15      # K5: masa ładunku / ładowność (więcej = lepiej)
+
+# Symulator ruchu kierowców (etap 8): przesuwa kierowców po zaplanowanych trasach i zapisuje historię GPS
+simulator:
+  enabled: true
+  tick-ms: 1000        # tick co 1 s czasu rzeczywistego
+  speedup: 60          # 1 s rzeczywista = 1 min symulacji (5-godzinna trasa trwa 5 min)
+  seed: 42             # ziarno szumu — powtarzalny eksperyment
+  noise: 0.10          # rzeczywisty czas krawędzi losowo ±10%
+  # „Prawdziwe” korki — ukryte przed algorytmem; samouczenie delayFactor ma je odkryć (tylko w jednym kierunku)
+  congestion:
+    - { from: Warszawa, to: Stryków, factor: 1.30 }   # A2, wyjazd z Warszawy
+    - { from: Katowice, to: Kraków, factor: 1.40 }    # A4
+    - { from: Warszawa, to: Ostróda, factor: 1.25 }   # S7 w kierunku Gdańska

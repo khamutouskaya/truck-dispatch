@@ -1,0 +1,6 @@
+# Tylko dla testów: classpath:/config/application.yaml nadpisuje główny application.yaml.
+# Symulator nie działa w tle — testy wywołują SimulationService.advance() ręcznie, w świecie bez korków i szumu.
+simulator:
+  enabled: false
+  noise: 0.0
+  congestion: []
