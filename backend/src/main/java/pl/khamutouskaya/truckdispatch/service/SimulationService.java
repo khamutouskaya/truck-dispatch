@@ -30,7 +30,6 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -153,7 +152,7 @@ public class SimulationService {
                 driver.getContinuousDrivingMin());
         // Ziarno zależne od zlecenia: ta sama podróż po restarcie ma ten sam szum
         TrafficModel traffic = new TrafficModel(congestionByEdgeId(), properties.noise(),
-                new Random(properties.seed() * 31 + order.getId()));
+                TrafficModel.randomFor(properties.seed(), order.getId()));
 
         RoadNode loading = order.getLoadingNode();
         RoadNode unloading = order.getUnloadingNode();

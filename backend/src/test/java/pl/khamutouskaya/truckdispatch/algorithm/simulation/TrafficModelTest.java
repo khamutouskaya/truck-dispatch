@@ -42,6 +42,29 @@ class TrafficModelTest {
     }
 
     @Test
+    void consecutiveTripsGetIndependentNoise() {
+        // Regresja: przy new Random(seed * 31 + tripId) pierwsze losowania sąsiednich podróży były prawie równe
+        // i 20 podróży w eksperymencie 8.5 miało identyczny czas. Szum kolejnych podróży musi się różnić.
+        double min = Double.MAX_VALUE, max = -Double.MAX_VALUE;
+        for (long tripId = 1; tripId <= 20; tripId++) {
+            TrafficModel traffic = new TrafficModel(Map.of(), 0.10, TrafficModel.randomFor(42, tripId));
+            double t = traffic.actualTimeMin(1, 100);
+            min = Math.min(min, t);
+            max = Math.max(max, t);
+        }
+        // 20 niezależnych losowań z [90, 110] — rozrzut znacznie większy niż 1 min
+        assertThat(max - min).isGreaterThan(10);
+    }
+
+    @Test
+    void sameTripGetsSameNoiseAfterRestart() {
+        double first = new TrafficModel(Map.of(), 0.1, TrafficModel.randomFor(42, 7)).actualTimeMin(1, 60);
+        double again = new TrafficModel(Map.of(), 0.1, TrafficModel.randomFor(42, 7)).actualTimeMin(1, 60);
+
+        assertThat(again).isEqualTo(first);
+    }
+
+    @Test
     void rejectsInvalidParameters() {
         assertThatThrownBy(() -> new TrafficModel(Map.of(), 1.0, new Random()))
                 .isInstanceOf(IllegalArgumentException.class);
