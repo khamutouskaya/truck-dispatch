@@ -28,6 +28,10 @@
 	</scm>
 	<properties>
 		<java.version>25</java.version>
+		<!-- Testy z tagiem "experiment" (długie, ~30 s) nie są uruchamiane w zwykłym mvn test;
+		     uruchomienie osobno: ./mvnw test -Pexperiment -->
+		<test.groups></test.groups>
+		<test.excludedGroups>experiment</test.excludedGroups>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -137,7 +141,30 @@
 					</execution>
 				</executions>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<groups>${test.groups}</groups>
+					<excludedGroups>${test.excludedGroups}</excludedGroups>
+					<systemPropertyVariables>
+						<!-- Wyniki eksperymentów: experiments/results/ w katalogu głównym repozytorium -->
+						<experiments.results.dir>${project.basedir}/../experiments/results</experiments.results.dir>
+					</systemPropertyVariables>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
+
+	<profiles>
+		<!-- Tylko eksperymenty: ./mvnw test -Pexperiment -->
+		<profile>
+			<id>experiment</id>
+			<properties>
+				<test.groups>experiment</test.groups>
+				<test.excludedGroups></test.excludedGroups>
+			</properties>
+		</profile>
+	</profiles>
 
 </project>

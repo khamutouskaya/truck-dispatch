@@ -1,5 +1,6 @@
 package pl.khamutouskaya.truckdispatch.service;
 
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -49,8 +50,10 @@ import static org.assertj.core.api.Assertions.within;
  * <p>
  * Błąd ETA podróży n = |prognoza − fakt| / fakt, gdzie prognoza = koniec z decyzji przydziału − chwila decyzji,
  * fakt = czas między pierwszym a ostatnim punktem GPS (próbka co 1 min → fakt zawyżony o ≤ 1 min, ≤ 0,6%).
- * Wynik: tabela w konsoli i target/experiments/eta-learning.csv (do wykresu).
+ * Wynik: tabela w konsoli i experiments/results/eta-learning.csv w katalogu głównym repozytorium (do wykresu).
+ * Tag "experiment": pomijany w zwykłym mvn test, uruchomienie: ./mvnw test -Pexperiment.
  */
+@Tag("experiment")
 @SpringBootTest
 @Transactional
 @TestPropertySource(properties = {
@@ -184,7 +187,8 @@ class LearningExperimentIntegrationTest {
                 .append("Route Warszawa → Gdańsk after:  ").append(routeAfter).append('\n');
         System.out.println(table);
 
-        Path dir = Path.of("target", "experiments");
+        // Katalog ustawia surefire (pom.xml); domyślnie względem backend/ — np. przy uruchomieniu z IDE
+        Path dir = Path.of(System.getProperty("experiments.results.dir", "../experiments/results"));
         Files.createDirectories(dir);
         Files.writeString(dir.resolve("eta-learning.csv"), csv, StandardCharsets.UTF_8);
     }

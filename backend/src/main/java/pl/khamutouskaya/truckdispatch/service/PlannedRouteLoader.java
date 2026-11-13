@@ -5,11 +5,9 @@ import org.springframework.stereotype.Component;
 import pl.khamutouskaya.truckdispatch.algorithm.simulation.GeoPoint;
 import pl.khamutouskaya.truckdispatch.algorithm.simulation.PlannedEdge;
 import pl.khamutouskaya.truckdispatch.domain.OrderRouteEdge;
-import pl.khamutouskaya.truckdispatch.domain.RoadEdge;
 import pl.khamutouskaya.truckdispatch.domain.RoadNode;
 import pl.khamutouskaya.truckdispatch.domain.RouteLeg;
 import pl.khamutouskaya.truckdispatch.repository.OrderRouteEdgeRepository;
-import tools.jackson.databind.json.JsonMapper;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -25,7 +23,7 @@ import java.util.Map;
 class PlannedRouteLoader {
 
     private final OrderRouteEdgeRepository orderRouteEdgeRepository;
-    private final JsonMapper jsonMapper;
+    private final EdgeGeometryReader edgeGeometryReader;
 
     /**
      * @param empty   krawędzie dojazdu pustym
@@ -47,27 +45,14 @@ class PlannedRouteLoader {
         Map<Integer, OrderRouteEdge> bySeq = new LinkedHashMap<>();
         for (OrderRouteEdge routeEdge : orderRouteEdgeRepository.findByOrderIdOrderBySeq(orderId)) {
             PlannedEdge planned = new PlannedEdge(routeEdge.getSeq(), routeEdge.getEdge().getId(),
-                    routeEdge.getBaseTimeMin(), geometry(routeEdge.getEdge()));
+                    routeEdge.getBaseTimeMin(), edgeGeometryReader.read(routeEdge.getEdge()));
             (routeEdge.getLeg() == RouteLeg.EMPTY ? empty : loaded).add(planned);
             bySeq.put(routeEdge.getSeq(), routeEdge);
         }
         return new PlannedRoute(empty, loaded, bySeq);
     }
 
-    // Geometria z kolumny jsonb: [[lon, lat], ...]; bez geometrii — odcinek prosty między węzłami
-    private List<GeoPoint> geometry(RoadEdge edge) {
-        if (edge.getGeometry() == null) {
-            return List.of(point(edge.getFromNode()), point(edge.getToNode()));
-        }
-        double[][] lonLat = jsonMapper.readValue(edge.getGeometry(), double[][].class);
-        List<GeoPoint> points = new ArrayList<>(lonLat.length);
-        for (double[] p : lonLat) {
-            points.add(new GeoPoint(p[1], p[0]));
-        }
-        return points;
-    }
-
     static GeoPoint point(RoadNode node) {
-        return new GeoPoint(node.getLat(), node.getLon());
+        return EdgeGeometryReader.point(node);
     }
 }

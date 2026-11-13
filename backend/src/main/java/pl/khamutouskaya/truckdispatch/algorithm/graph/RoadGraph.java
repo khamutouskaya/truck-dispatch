@@ -65,6 +65,10 @@ public final class RoadGraph {
         return node;
     }
 
+    public boolean containsNode(long id) {
+        return nodes.containsKey(id);
+    }
+
     public Collection<GraphNode> nodes() {
         return nodes.values();
     }
