@@ -4,7 +4,9 @@ import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -17,19 +19,24 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import pl.khamutouskaya.truckdispatch.domain.Role;
 import pl.khamutouskaya.truckdispatch.service.TokenService;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.List;
 
 /**
  * Spring Security: hasła (BCrypt) i tokeny JWT podpisane HMAC-SHA256 jednym kluczem tajnym —
  * ta sama aplikacja wydaje tokeny (logowanie) i je sprawdza (każde żądanie), więc wystarcza klucz symetryczny.
  */
 @Configuration
-@EnableConfigurationProperties(JwtProperties.class)
+@EnableConfigurationProperties({JwtProperties.class, CorsProperties.class})
 public class SecurityConfig {
 
     // Skróty haseł w app_user (V9) są w formacie BCrypt
@@ -53,6 +60,24 @@ public class SecurityConfig {
     @Bean
     public JwtDecoder jwtDecoder(SecretKey jwtSecretKey) {
         return NimbusJwtDecoder.withSecretKey(jwtSecretKey).macAlgorithm(MacAlgorithm.HS256).build();
+    }
+
+    /**
+     * CORS: React działa pod innym adresem (Vite, port 5173) niż API (8080), więc przeglądarka najpierw pyta
+     * serwer (żądanie OPTIONS, tzw. preflight), czy wolno. Odpowiadamy „tak” tylko dla adresów z konfiguracji.
+     * Ciasteczka nie są potrzebne — token idzie w nagłówku Authorization.
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource(CorsProperties properties) {
+        CorsConfiguration cors = new CorsConfiguration();
+        cors.setAllowedOrigins(properties.allowedOrigins());
+        cors.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        cors.setAllowedHeaders(List.of(HttpHeaders.AUTHORIZATION, HttpHeaders.CONTENT_TYPE));
+        cors.setAllowCredentials(false);
+        cors.setMaxAge(Duration.ofHours(1));
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/api/**", cors);
+        return source;
     }
 
     /**
@@ -87,6 +112,8 @@ public class SecurityConfig {
         return http
                 // REST z tokenem w nagłówku, bez ciasteczek sesji — CSRF nie dotyczy
                 .csrf(csrf -> csrf.disable())
+                // CORS przed uwierzytelnieniem: preflight OPTIONS nie niesie tokenu
+                .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()

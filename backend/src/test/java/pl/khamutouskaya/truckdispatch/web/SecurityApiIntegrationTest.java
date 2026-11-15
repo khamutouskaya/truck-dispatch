@@ -20,7 +20,9 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Base64;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -40,8 +42,12 @@ class SecurityApiIntegrationTest {
     @Autowired private JwtEncoder jwtEncoder;
 
     private String loginToken() throws Exception {
+        return loginToken("dyspozytor");
+    }
+
+    private String loginToken(String username) throws Exception {
         String json = mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\": \"dyspozytor\", \"password\": \"haslo123\"}"))
+                        .content("{\"username\": \"%s\", \"password\": \"haslo123\"}".formatted(username)))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         return jsonMapper.readTree(json).get("accessToken").asString();
@@ -114,5 +120,55 @@ class SecurityApiIntegrationTest {
         mockMvc.perform(get("/api/drivers").header(HttpHeaders.AUTHORIZATION, bearer(forged)))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.detail").value("Invalid or expired token"));
+    }
+
+    @Test
+    void tamperedRoleInPayloadIs401() throws Exception {
+        // Kierowca zmienia w swoim tokenie "role":"DRIVER" na "DISPATCHER", zostawiając stary podpis
+        String[] parts = loginToken("jan.kowalski").split("\\.");
+        String payload = new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
+        String forgedPayload = payload.replace("\"DRIVER\"", "\"DISPATCHER\"");
+        assertThat(forgedPayload).contains("DISPATCHER");
+        String forged = parts[0] + "." + base64Url(forgedPayload) + "." + parts[2];
+
+        // Podpis nie pasuje do zmienionej treści → token odrzucony
+        mockMvc.perform(get("/api/drivers").header(HttpHeaders.AUTHORIZATION, bearer(forged)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.detail").value("Invalid or expired token"));
+    }
+
+    @Test
+    void unsignedTokenWithAlgNoneIs401() throws Exception {
+        // Klasyczny atak: nagłówek "alg":"none" i brak podpisu — dekoder akceptuje tylko HS256
+        long now = Instant.now().getEpochSecond();
+        String header = base64Url("{\"alg\":\"none\"}");
+        String payload = base64Url("{\"iss\":\"truckdispatch\",\"sub\":\"dyspozytor\",\"role\":\"DISPATCHER\","
+                + "\"iat\":" + now + ",\"exp\":" + (now + 3600) + "}");
+        mockMvc.perform(get("/api/drivers").header(HttpHeaders.AUTHORIZATION, bearer(header + "." + payload + ".")))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void driverLoginTokenOpensOnlyOwnPanel() throws Exception {
+        // Pełna ścieżka na prawdziwym tokenie: logowanie → claim driverId → /api/me
+        String token = loginToken("piotr.nowak");
+        mockMvc.perform(get("/api/me").header(HttpHeaders.AUTHORIZATION, bearer(token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.driver.id").value(2))
+                .andExpect(jsonPath("$.driver.lastName").value("Nowak"));
+        mockMvc.perform(get("/api/drivers/2").header(HttpHeaders.AUTHORIZATION, bearer(token)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void noSessionCookieIsCreated() throws Exception {
+        // Bezstanowo: każde żądanie niesie token, serwer nie trzyma sesji (stąd brak CSRF)
+        mockMvc.perform(get("/api/drivers").header(HttpHeaders.AUTHORIZATION, bearer(loginToken())))
+                .andExpect(status().isOk())
+                .andExpect(header().doesNotExist(HttpHeaders.SET_COOKIE));
+    }
+
+    private static String base64Url(String json) {
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(json.getBytes(StandardCharsets.UTF_8));
     }
 }

@@ -13,6 +13,9 @@ import pl.khamutouskaya.truckdispatch.dto.DriverLocationRequest;
 import pl.khamutouskaya.truckdispatch.dto.DriverRequest;
 import pl.khamutouskaya.truckdispatch.dto.DriverResponse;
 import pl.khamutouskaya.truckdispatch.dto.DriverStatusRequest;
+import pl.khamutouskaya.truckdispatch.dto.MyProfileResponse;
+import pl.khamutouskaya.truckdispatch.dto.TransportOrderResponse;
+import pl.khamutouskaya.truckdispatch.dto.VehicleResponse;
 import pl.khamutouskaya.truckdispatch.exception.ConflictException;
 import pl.khamutouskaya.truckdispatch.exception.NotFoundException;
 import pl.khamutouskaya.truckdispatch.repository.DriverLocationRepository;
@@ -30,6 +33,7 @@ import java.util.Set;
 public class DriverService {
 
     private static final Sort BY_NAME = Sort.by("lastName", "firstName");
+    private static final Sort NEWEST_FIRST = Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
     private static final Set<OrderStatus> ACTIVE_ORDER_STATUSES = Set.of(OrderStatus.ASSIGNED, OrderStatus.IN_PROGRESS);
 
     private final DriverRepository driverRepository;
@@ -69,12 +73,50 @@ public class DriverService {
     @Transactional
     public DriverResponse updateLocation(Long id, DriverLocationRequest request) {
         Driver driver = getDriver(id);
+        recordManualLocation(driver, request);
+        return DriverResponse.from(driver);
+    }
+
+    // --- Panel kierowcy (/api/me): id kierowcy pochodzi z tokenu, nie z adresu ---
+
+    // Własny profil: dane kierowcy i jego pojazd (może go nie mieć)
+    public MyProfileResponse findMyProfile(Long driverId) {
+        Driver driver = getDriver(driverId);
+        VehicleResponse vehicle = vehicleRepository.findByDriverId(driverId).map(VehicleResponse::from).orElse(null);
+        return new MyProfileResponse(DriverResponse.from(driver), vehicle);
+    }
+
+    // Własne zlecenia, najnowsze najpierw
+    public List<TransportOrderResponse> findMyOrders(Long driverId) {
+        getDriver(driverId);
+        return transportOrderRepository.findByAssignedDriverId(driverId, NEWEST_FIRST).stream()
+                .map(TransportOrderResponse::from)
+                .toList();
+    }
+
+    /**
+     * Kierowca sam ustawia swoje położenie (źródło MANUAL).
+     * Zabronione w trakcie zlecenia: wtedy położenie zapisuje symulator, a ręczna zmiana zepsułaby
+     * ślad GPS, z którego samouczenie liczy rzeczywiste czasy przejazdu krawędzi.
+     */
+    @Transactional
+    public DriverResponse updateMyLocation(Long driverId, DriverLocationRequest request) {
+        Driver driver = getDriver(driverId);
+        if (transportOrderRepository.existsByAssignedDriverIdAndStatusIn(driverId, ACTIVE_ORDER_STATUSES)) {
+            throw new ConflictException("Location cannot be changed during an active order (ASSIGNED or IN_PROGRESS): "
+                    + "it is recorded by the simulator and used to learn travel times");
+        }
+        recordManualLocation(driver, request);
+        return DriverResponse.from(driver);
+    }
+
+    // Nowe bieżące położenie + punkt w historii (driver_location)
+    private void recordManualLocation(Driver driver, DriverLocationRequest request) {
         driver.setCurrentLat(request.lat());
         driver.setCurrentLon(request.lon());
         driver.setLocationSource(LocationSource.MANUAL);
         driver.setLocationUpdatedAt(LocalDateTime.now());
 
-        // Każda zmiana położenia trafia też do historii
         DriverLocation location = new DriverLocation();
         location.setDriver(driver);
         location.setLat(request.lat());
@@ -82,7 +124,6 @@ public class DriverService {
         location.setRecordedAt(driver.getLocationUpdatedAt());
         location.setSource(LocationSource.MANUAL);
         driverLocationRepository.save(location);
-        return DriverResponse.from(driver);
     }
 
     @Transactional

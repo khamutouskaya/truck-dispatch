@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -21,6 +22,7 @@ public class AuthController {
     private final AuthService authService;
 
     // 200, nie 201: logowanie nie tworzy zasobu (token nie jest zapisywany w bazie)
+    @SecurityRequirements // bez tokenu (puste wymaganie zastępuje globalne z OpenApiConfig)
     @PostMapping("/login")
     @Operation(summary = "Log in and get a JWT access token (401 on wrong username or password)")
     public LoginResponse login(@Valid @RequestBody LoginRequest request) {
