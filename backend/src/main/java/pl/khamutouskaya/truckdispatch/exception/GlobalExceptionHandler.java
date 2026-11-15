@@ -3,6 +3,9 @@ package pl.khamutouskaya.truckdispatch.exception;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -23,6 +26,26 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NotFoundException.class)
     public ProblemDetail handleNotFound(NotFoundException ex) {
         return problem(HttpStatus.NOT_FOUND, "Not found", ex.getMessage());
+    }
+
+    @ExceptionHandler(AuthenticationFailedException.class)
+    public ProblemDetail handleAuthenticationFailed(AuthenticationFailedException ex) {
+        return problem(HttpStatus.UNAUTHORIZED, "Authentication failed", ex.getMessage());
+    }
+
+    // Z filtrów Spring Security (przez SecurityProblemHandler): brak tokenu lub token nieważny
+    @ExceptionHandler(AuthenticationException.class)
+    public ProblemDetail handleUnauthenticated(AuthenticationException ex) {
+        String detail = ex instanceof OAuth2AuthenticationException
+                ? "Invalid or expired token"
+                : "Authentication required: send header Authorization: Bearer <token> (POST /api/auth/login)";
+        return problem(HttpStatus.UNAUTHORIZED, "Unauthorized", detail);
+    }
+
+    // Token poprawny, ale rola nie ma dostępu do tego adresu
+    @ExceptionHandler(AccessDeniedException.class)
+    public ProblemDetail handleAccessDenied(AccessDeniedException ex) {
+        return problem(HttpStatus.FORBIDDEN, "Forbidden", "Your role has no access to this resource");
     }
 
     @ExceptionHandler(ConflictException.class)

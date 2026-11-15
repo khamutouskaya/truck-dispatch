@@ -1,12 +1,13 @@
 package pl.khamutouskaya.truckdispatch.web;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.WebApplicationContext;
 import pl.khamutouskaya.truckdispatch.domain.RoadNode;
 import pl.khamutouskaya.truckdispatch.repository.RoadNodeRepository;
 import tools.jackson.databind.JsonNode;
@@ -25,13 +26,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * @Transactional — wszystko, co zapisze test (także przez HTTP w MockMvc), jest wycofywane.
  */
 @SpringBootTest
-@AutoConfigureMockMvc
 @Transactional
 class AssignmentApiIntegrationTest {
 
-    @Autowired private MockMvc mockMvc;
+    @Autowired private WebApplicationContext context;
+    private MockMvc mockMvc;
     @Autowired private JsonMapper jsonMapper;
     @Autowired private RoadNodeRepository roadNodeRepository;
+
+    // Wszystkie żądania w tym teście — jako dyspozytor (API wymaga tokenu)
+    @BeforeEach
+    void authenticateAsDispatcher() {
+        mockMvc = TestAuth.mockMvcAs(context, TestAuth.dispatcher());
+    }
 
     private long nodeId(String name) {
         return roadNodeRepository.findAll().stream().filter(n -> n.getName().equals(name))

@@ -1,12 +1,13 @@
 package pl.khamutouskaya.truckdispatch.web;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.context.transaction.AfterTransaction;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.WebApplicationContext;
 import pl.khamutouskaya.truckdispatch.domain.RoadNode;
 import pl.khamutouskaya.truckdispatch.domain.Vehicle;
 import pl.khamutouskaya.truckdispatch.repository.RoadEdgeRepository;
@@ -30,19 +31,25 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Wiadukt Piła ↔ Bydgoszcz (max 3,8 m, V5): niski pojazd LU 89012 (3,4 m) przejeżdża, WX 12345 (4,0 m) — nie.
  */
 @SpringBootTest
-@AutoConfigureMockMvc
 @Transactional
 class RouteApiIntegrationTest {
 
     private static final String LOW_VEHICLE = "LU 89012";
     private static final String HIGH_VEHICLE = "WX 12345";
 
-    @Autowired private MockMvc mockMvc;
+    @Autowired private WebApplicationContext context;
+    private MockMvc mockMvc;
     @Autowired private JsonMapper jsonMapper;
     @Autowired private RoadNodeRepository roadNodeRepository;
     @Autowired private RoadEdgeRepository roadEdgeRepository;
     @Autowired private VehicleRepository vehicleRepository;
     @Autowired private RoadGraphService roadGraphService;
+
+    // Wszystkie żądania w tym teście — jako dyspozytor (API wymaga tokenu)
+    @BeforeEach
+    void authenticateAsDispatcher() {
+        mockMvc = TestAuth.mockMvcAs(context, TestAuth.dispatcher());
+    }
 
     // Test 409 zmienia ograniczenia krawędzi i przeładowuje graf; po wycofaniu transakcji — graf z czystej bazy
     @AfterTransaction

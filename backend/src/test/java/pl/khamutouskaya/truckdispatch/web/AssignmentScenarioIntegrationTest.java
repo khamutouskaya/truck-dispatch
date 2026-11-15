@@ -1,12 +1,13 @@
 package pl.khamutouskaya.truckdispatch.web;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.WebApplicationContext;
 import pl.khamutouskaya.truckdispatch.algorithm.graph.GeoDistance;
 import pl.khamutouskaya.truckdispatch.domain.Driver;
 import pl.khamutouskaya.truckdispatch.domain.DriverStatus;
@@ -36,18 +37,24 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Załadunek w Lublinie — Michał stoi na miejscu, więc jest najbliższy.
  */
 @SpringBootTest
-@AutoConfigureMockMvc
 @Transactional
 class AssignmentScenarioIntegrationTest {
 
     private static final long MICHAL_ID = 8;
     private static final long JAN_ID = 1;
 
-    @Autowired private MockMvc mockMvc;
+    @Autowired private WebApplicationContext context;
+    private MockMvc mockMvc;
     @Autowired private JsonMapper jsonMapper;
     @Autowired private RoadNodeRepository roadNodeRepository;
     @Autowired private DriverRepository driverRepository;
     @Autowired private VehicleRepository vehicleRepository;
+
+    // Wszystkie żądania w tym teście — jako dyspozytor (API wymaga tokenu)
+    @BeforeEach
+    void authenticateAsDispatcher() {
+        mockMvc = TestAuth.mockMvcAs(context, TestAuth.dispatcher());
+    }
 
     private RoadNode node(String name) {
         return roadNodeRepository.findAll().stream().filter(n -> n.getName().equals(name)).findFirst().orElseThrow();

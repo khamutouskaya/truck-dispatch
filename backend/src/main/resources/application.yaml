@@ -16,6 +16,12 @@ spring:
       charset: UTF-8
       force: true
 
+# Tokeny JWT (logowanie: POST /api/auth/login). Podpis HMAC-SHA256 kluczem jwt.secret (min. 32 bajty).
+# Wartość domyślna — TYLKO do pracy lokalnej; w docker compose / na prezentacji ustawić zmienną JWT_SECRET.
+jwt:
+  secret: ${JWT_SECRET:dev-only-truckdispatch-secret-change-me-0123456789}
+  ttl: 8h              # czas ważności tokenu: jedna zmiana; bez refresh tokenów
+
 # Wagi kryteriów algorytmu przydziału (suma = 1), docs/karta-i-algorytm.md, krok 9
 assignment:
   weights:
