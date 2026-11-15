@@ -1,6 +1,8 @@
 package pl.khamutouskaya.truckdispatch.algorithm.simulation;
 
-// Co kierowca robi w danej chwili
+/**
+ * Co kierowca robi w danej chwili
+ */
 public enum Activity {
     DRIVING,
     BREAK,      // przerwa 45 min (561/2006)

@@ -19,7 +19,6 @@ import java.util.function.Function;
  * a macierz sąsiedztwa zajmowałaby O(V²), w większości zera.
  * <p>
  * Obiekt jest niezmienny: po zmianie danych w bazie (np. delayFactor) tworzy się nowy graf.
- * Klasa nie zależy od Springa ani od JPA — łatwo ją testować na małych danych.
  */
 public final class RoadGraph {
 
@@ -123,7 +122,7 @@ public final class RoadGraph {
             long current = queue.poll();
             for (GraphEdge edge : adjacency.get(current)) {
                 long neighbour = next.apply(edge);
-                if (visited.add(neighbour)) {   // add zwraca false, jeśli węzeł już był odwiedzony
+                if (visited.add(neighbour)) {
                     queue.add(neighbour);
                 }
             }

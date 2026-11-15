@@ -16,13 +16,16 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import pl.khamutouskaya.truckdispatch.domain.OrderStatus;
+import pl.khamutouskaya.truckdispatch.dto.OrderTrackResponse;
 import pl.khamutouskaya.truckdispatch.dto.TransportOrderRequest;
 import pl.khamutouskaya.truckdispatch.dto.TransportOrderResponse;
 import pl.khamutouskaya.truckdispatch.service.TransportOrderService;
 
 import java.util.List;
 
-// Celowo brak DELETE: zlecenia są przechowywane jako historia, zamiast usuwania — cancel
+/**
+ * Celowo brak DELETE: zlecenia są przechowywane jako historia, zamiast usuwania — cancel
+ */
 @RestController
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
@@ -41,6 +44,12 @@ public class TransportOrderController {
     @Operation(summary = "Get order by id")
     public TransportOrderResponse findById(@PathVariable Long id) {
         return transportOrderService.findById(id);
+    }
+
+    @GetMapping("/{id}/track")
+    @Operation(summary = "GPS track of the order (points in time order; empty before the trip starts)")
+    public OrderTrackResponse track(@PathVariable Long id) {
+        return transportOrderService.findTrack(id);
     }
 
     @PostMapping

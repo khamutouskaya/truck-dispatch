@@ -10,10 +10,8 @@ import java.util.Optional;
 public interface RouteFinder {
 
     /**
-     * @param graph   graf dróg
      * @param sources węzły startowe z czasem dotarcia do nich [min]; kilka startów naraz —
      *                np. trzy najbliższe węzły z czasem „pierwszej mili”; algorytm sam wybiera najlepszy
-     * @param target  węzeł docelowy
      * @param vehicle profil pojazdu (wysokość, masa, załadunek)
      * @return najszybsza trasa albo {@code Optional.empty()}, jeśli cel jest nieosiągalny dla tego pojazdu
      */

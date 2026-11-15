@@ -27,7 +27,7 @@ public record VehicleResponse(
                 vehicle.getHeightM(),
                 vehicle.getEmptyWeightKg(),
                 driver == null ? null : driver.getId(),
-                driver == null ? null : driver.getFirstName() + " " + driver.getLastName()
+                driver == null ? null : driver.getFullName()
         );
     }
 }

@@ -9,9 +9,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 
 /**
- * Przykład z docs/karta-i-algorytm.md, część 4: zlecenie Łódź → Kraków, start 08:00,
+ * Przykład policzony ręcznie: zlecenie Łódź → Kraków, start 08:00,
  * załadunek i rozładunek po 60 min, jazda z ładunkiem 3 h 44 min = 224 min.
- * Każdy kierowca musi dać dokładnie te liczby, które są w dokumencie.
+ * Każdy kierowca musi dać dokładnie te liczby.
  */
 class WorkTimeSimulatorTest {
 
@@ -27,7 +27,7 @@ class WorkTimeSimulatorTest {
         return EIGHT.withHour(hour).withMinute(minute);
     }
 
-    // --- Przykład z dokumentu ---
+    // --- Przykład policzony ręcznie ---
 
     @Test
     void driverA_breakInTheMiddleOfLoadedLeg() {

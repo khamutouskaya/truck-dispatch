@@ -70,9 +70,18 @@ public class DriverService {
         return DriverResponse.from(driver);
     }
 
+    /**
+     * Ręczna zmiana położenia (źródło MANUAL) — przez dyspozytora albo samego kierowcę.
+     * Zabroniona w trakcie zlecenia (ASSIGNED / IN_PROGRESS): wtedy położenie zapisuje symulator,
+     * a ręczna zmiana zepsułaby ślad GPS, z którego samouczenie liczy rzeczywiste czasy przejazdu krawędzi.
+     */
     @Transactional
     public DriverResponse updateLocation(Long id, DriverLocationRequest request) {
         Driver driver = getDriver(id);
+        if (transportOrderRepository.existsByAssignedDriverIdAndStatusIn(id, ACTIVE_ORDER_STATUSES)) {
+            throw new ConflictException("Location cannot be changed during an active order (ASSIGNED or IN_PROGRESS): "
+                    + "it is recorded by the simulator and used to learn travel times");
+        }
         recordManualLocation(driver, request);
         return DriverResponse.from(driver);
     }
@@ -94,20 +103,10 @@ public class DriverService {
                 .toList();
     }
 
-    /**
-     * Kierowca sam ustawia swoje położenie (źródło MANUAL).
-     * Zabronione w trakcie zlecenia: wtedy położenie zapisuje symulator, a ręczna zmiana zepsułaby
-     * ślad GPS, z którego samouczenie liczy rzeczywiste czasy przejazdu krawędzi.
-     */
+    // Kierowca sam ustawia swoje położenie — te same zasady co dla dyspozytora (updateLocation)
     @Transactional
     public DriverResponse updateMyLocation(Long driverId, DriverLocationRequest request) {
-        Driver driver = getDriver(driverId);
-        if (transportOrderRepository.existsByAssignedDriverIdAndStatusIn(driverId, ACTIVE_ORDER_STATUSES)) {
-            throw new ConflictException("Location cannot be changed during an active order (ASSIGNED or IN_PROGRESS): "
-                    + "it is recorded by the simulator and used to learn travel times");
-        }
-        recordManualLocation(driver, request);
-        return DriverResponse.from(driver);
+        return updateLocation(driverId, request);
     }
 
     // Nowe bieżące położenie + punkt w historii (driver_location)

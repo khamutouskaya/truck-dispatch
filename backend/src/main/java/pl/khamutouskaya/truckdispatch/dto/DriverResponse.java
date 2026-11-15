@@ -6,7 +6,9 @@ import pl.khamutouskaya.truckdispatch.domain.LocationSource;
 
 import java.time.LocalDateTime;
 
-// currentLat, currentLon, locationUpdatedAt, locationSource mogą być null (np. OFF_DUTY)
+/**
+ * currentLat, currentLon, locationUpdatedAt, locationSource mogą być null (np. OFF_DUTY)
+ */
 public record DriverResponse(
         Long id,
         String firstName,

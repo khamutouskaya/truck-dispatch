@@ -4,7 +4,9 @@ import pl.khamutouskaya.truckdispatch.algorithm.assignment.Candidate;
 import pl.khamutouskaya.truckdispatch.algorithm.assignment.Criterion;
 import pl.khamutouskaya.truckdispatch.domain.TransportOrder;
 
-// K5: wykorzystanie ładowności = masa ładunku / ładowność — duże auta zostają dla dużych ładunków
+/**
+ * K5: wykorzystanie ładowności = masa ładunku / ładowność — duże auta zostają dla dużych ładunków
+ */
 public class VehicleUtilizationCriterion implements Criterion {
 
     @Override

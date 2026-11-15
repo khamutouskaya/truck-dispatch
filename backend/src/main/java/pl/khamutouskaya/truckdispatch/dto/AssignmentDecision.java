@@ -20,7 +20,6 @@ import java.util.Map;
  * pod tabelą: rejected — kto i dlaczego odpadł
  * </pre>
  *
- * @param orderId          zlecenie
  * @param evaluatedAt      chwila obliczenia („teraz” algorytmu)
  * @param assignedDriverId zwycięzca albo null, gdy nikt nie przeszedł filtrów
  * @param criteria         kryteria w kolejności kolumn, z wagami użytymi w tej decyzji
@@ -59,7 +58,6 @@ public record AssignmentDecision(
     /**
      * Wiersz rankingu.
      *
-     * @param rank                kolejne miejsce od 1
      * @param assigned            czy temu kierowcy przydzielono zlecenie (true tylko dla rank = 1)
      * @param values              nazwa kryterium → wartości (klucze jak w criteria[].name)
      * @param trip                przebieg zlecenia dla tego kierowcy (trasy i czas pracy)

@@ -52,7 +52,7 @@ public class Driver {
     @Column(name = "location_source", length = 20)
     private LocationSource locationSource;
 
-    // Liczniki czasu jazdy (rozporządzenie UE 561/2006), minuty
+    // Liczniki czasu jazdy (rozporządzenie UE 561/2006) [min]
     @Column(name = "driving_time_today_min", nullable = false)
     private int drivingTimeTodayMin = 0;
 
@@ -61,4 +61,9 @@ public class Driver {
 
     @Column(name = "continuous_driving_min", nullable = false)
     private int continuousDrivingMin = 0;
+
+    // Imię i nazwisko do odpowiedzi API i wyjaśnienia decyzji (metoda, nie kolumna — JPA mapuje pola)
+    public String getFullName() {
+        return firstName + " " + lastName;
+    }
 }

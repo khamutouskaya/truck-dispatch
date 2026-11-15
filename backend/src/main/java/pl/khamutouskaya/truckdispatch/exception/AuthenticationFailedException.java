@@ -1,6 +1,8 @@
 package pl.khamutouskaya.truckdispatch.exception;
 
-// Błędny login lub hasło → 401 Unauthorized
+/**
+ * Błędny login lub hasło → 401 Unauthorized
+ */
 public class AuthenticationFailedException extends RuntimeException {
 
     public AuthenticationFailedException() {

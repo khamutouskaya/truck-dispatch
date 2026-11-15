@@ -1,6 +1,8 @@
 package pl.khamutouskaya.truckdispatch.algorithm.graph;
 
-// Wybór algorytmu wyszukiwania trasy (parametr GET /api/routes). Oba dają trasę o tym samym czasie.
+/**
+ * Wybór algorytmu wyszukiwania trasy (parametr GET /api/routes). Oba dają trasę o tym samym czasie.
+ */
 public enum RouteAlgorithm {
     DIJKSTRA,
     ASTAR;

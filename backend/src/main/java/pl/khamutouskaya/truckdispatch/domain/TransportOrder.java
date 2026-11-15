@@ -17,7 +17,9 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
-// Zlecenie transportowe (Order to słowo zastrzeżone w SQL, dlatego TransportOrder)
+/**
+ * Zlecenie transportowe (Order to słowo zastrzeżone w SQL, dlatego TransportOrder)
+ */
 @Entity
 @Table(name = "transport_order")
 @Getter
@@ -71,4 +73,15 @@ public class TransportOrder {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    // Czas załadunku [min]: podany w zleceniu albo domyślny dla miejsca załadunku.
+    // JPA mapuje pola (@Id na polu), więc te metody nie są kolumnami.
+    public int getLoadingMin() {
+        return estimatedLoadingMin != null ? estimatedLoadingMin : loadingNode.getDefaultHandlingMin();
+    }
+
+    // Czas rozładunku [min]: podany w zleceniu albo domyślny dla miejsca rozładunku
+    public int getUnloadingMin() {
+        return estimatedUnloadingMin != null ? estimatedUnloadingMin : unloadingNode.getDefaultHandlingMin();
+    }
 }

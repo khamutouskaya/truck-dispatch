@@ -56,7 +56,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Algorytm przydziału zlecenia (docs/karta-i-algorytm.md, część 3) — składa elementy z pakietu algorithm:
+ * Algorytm przydziału zlecenia — składa elementy z pakietu algorithm:
  * kandydaci AVAILABLE → szybki odsiew → trasy (Dijkstra) → symulacja czasu pracy → filtr terminów →
  * ocena wielokryterialna → zapis decyzji.
  */
@@ -195,7 +195,7 @@ public class AssignmentService {
         double lat = driver.getCurrentLat();
         double lon = driver.getCurrentLon();
 
-        // Krok 4: dwie trasy — pustym do załadunku, z ładunkiem do rozładunku (inne ograniczenia i prędkości)
+        // Dwie trasy — pustym do załadunku, z ładunkiem do rozładunku (inne ograniczenia i prędkości)
         VehicleProfile empty = VehicleProfile.empty(vehicle.getHeightM(), vehicle.getEmptyWeightKg());
         VehicleProfile loaded = VehicleProfile.loaded(vehicle.getHeightM(), vehicle.getEmptyWeightKg(),
                 order.getCargoWeightKg());
@@ -205,14 +205,14 @@ public class AssignmentService {
             return CandidateEvaluation.rejectedFor(RejectionReason.NO_ROUTE);
         }
 
-        // Krok 5: symulacja czasu pracy
-        TripPlan plan = new TripPlan(toLoading.get().totalTimeMin(), loadingMin(order),
-                toUnloading.get().totalTimeMin(), unloadingMin(order));
+        // Symulacja czasu pracy (przerwy i odpoczynki 561/2006)
+        TripPlan plan = new TripPlan(toLoading.get().totalTimeMin(), order.getLoadingMin(),
+                toUnloading.get().totalTimeMin(), order.getUnloadingMin());
         DriverWorkState state = new DriverWorkState(driver.getDrivingTimeTodayMin(), driver.getDrivingTimeWeekMin(),
                 driver.getContinuousDrivingMin());
         WorkTimeSimulation simulation = WorkTimeSimulator.simulate(now, state, plan);
 
-        // Krok 6: filtr twardy
+        // Filtr twardy: terminy i limit tygodniowy
         Optional<RejectionReason> lateRejection = CandidateFilter.deadlineCheck(simulation, order);
         if (lateRejection.isPresent()) {
             return CandidateEvaluation.rejectedFor(lateRejection.get());
@@ -223,7 +223,7 @@ public class AssignmentService {
         double firstMileKm = FirstMile.roadKm(GeoDistance.haversineKm(lat, lon, startNode.lat(), startNode.lon()));
         double distanceToLoadingKm = firstMileKm + toLoading.get().distanceKm();
 
-        Candidate candidate = new Candidate(driver.getId(), fullName(driver), vehicle.getCapacityKg(),
+        Candidate candidate = new Candidate(driver.getId(), driver.getFullName(), vehicle.getCapacityKg(),
                 distanceToLoadingKm, simulation);
         TripSummary trip = new TripSummary(distanceToLoadingKm, firstMileKm, toUnloading.get().distanceKm(),
                 plan.emptyDrivingMin(), plan.loadedDrivingMin(), simulation.arrivalAtLoading(), simulation.finish(),
@@ -293,23 +293,8 @@ public class AssignmentService {
         return result;
     }
 
-    // Czas załadunku: podany w zleceniu albo domyślny dla węzła
-    private static int loadingMin(TransportOrder order) {
-        Integer estimated = order.getEstimatedLoadingMin();
-        return estimated != null ? estimated : order.getLoadingNode().getDefaultHandlingMin();
-    }
-
-    private static int unloadingMin(TransportOrder order) {
-        Integer estimated = order.getEstimatedUnloadingMin();
-        return estimated != null ? estimated : order.getUnloadingNode().getDefaultHandlingMin();
-    }
-
     private static RejectedDriver rejectedDriver(Driver driver, Vehicle vehicle, RejectionReason reason) {
-        return new RejectedDriver(driver.getId(), fullName(driver),
+        return new RejectedDriver(driver.getId(), driver.getFullName(),
                 vehicle != null ? vehicle.getRegistrationNumber() : null, reason);
-    }
-
-    private static String fullName(Driver driver) {
-        return driver.getFirstName() + " " + driver.getLastName();
     }
 }

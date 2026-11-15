@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Ocena wielokryterialna kandydatów (kroki 7–9 algorytmu, docs/karta-i-algorytm.md):
+ * Ocena wielokryterialna kandydatów:
  * <ol>
  *   <li>surowe wartości każdego kryterium dla każdego kandydata;</li>
  *   <li>normalizacja min-max osobno w każdym kryterium;</li>

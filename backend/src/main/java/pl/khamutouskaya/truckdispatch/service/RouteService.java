@@ -14,7 +14,6 @@ import java.util.Optional;
 
 /**
  * Spring-owa obudowa wyszukiwania tras: bierze graf z RoadGraphService i wywołuje Dijkstrę.
- * Cała logika jest w pakiecie algorithm; tu tylko składanie elementów.
  * Bez @Transactional — graf jest w pamięci, baza nie jest używana.
  */
 @Service

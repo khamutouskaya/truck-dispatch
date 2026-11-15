@@ -19,7 +19,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-// Spring-owa nakładka na RoadGraph: ładuje graf z bazy do pamięci i udostępnia go algorytmom
+/**
+ * Spring-owa obudowa RoadGraph: ładuje graf z bazy do pamięci i udostępnia go algorytmom
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor

@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 
-// Wartości oczekiwane policzone ręcznie ze wzoru (zob. docs/karta-i-algorytm.md, część 1.4 i 2.1)
+// Wartości oczekiwane policzone ręcznie ze wzoru
 class EdgeTimeCalculatorTest {
 
     private static final double EPS = 1e-9;
@@ -30,8 +30,8 @@ class EdgeTimeCalculatorTest {
     }
 
     @Test
-    void nationalRoadWithAverageSurfaceFromDocumentation() {
-        // 70 km, v = 65 × 0,85 = 55,25 km/h, t = 70 / 55,25 × 60 = 76,0181 min (w dokumentacji 1,27 h)
+    void nationalRoadWithAverageSurface() {
+        // 70 km, v = 65 × 0,85 = 55,25 km/h, t = 70 / 55,25 × 60 = 76,0181 min (≈ 1,27 h)
         GraphEdge national = edge(70, RoadType.NATIONAL, SurfaceQuality.AVERAGE, Terrain.FLAT, 1.0);
 
         assertThat(EdgeTimeCalculator.effectiveSpeedKmh(national, EMPTY_TRUCK)).isCloseTo(55.25, within(EPS));

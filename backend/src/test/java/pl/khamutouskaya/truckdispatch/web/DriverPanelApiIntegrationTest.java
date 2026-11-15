@@ -27,7 +27,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Panel kierowcy /api/me: id kierowcy z tokenu. Jan Kowalski (id 1), Piotr Nowak (id 2).
+ * Panel kierowcy /api/me: id kierowcy z tokenu. Plus zakaz ręcznej zmiany położenia w trakcie zlecenia
+ * (kierowca i dyspozytor). Jan Kowalski (id 1), Piotr Nowak (id 2).
  * W danych V3 nikt nie ma zleceń — test tworzy zlecenie jako dyspozytor (automatycznie trafia do Jana).
  */
 @SpringBootTest
@@ -128,6 +129,23 @@ class DriverPanelApiIntegrationTest {
         // Położenie się nie zmieniło (nadal Warszawa z V3)
         mockMvc.perform(get("/api/me").with(TestAuth.driver(JAN_ID, "jan.kowalski")))
                 .andExpect(jsonPath("$.driver.currentLat").value(52.2297));
+    }
+
+    @Test
+    void dispatcherCannotMoveDriverDuringActiveOrderEither() throws Exception {
+        createOrderAssignedToJan();
+
+        // Ta sama zasada dla dyspozytora: PATCH /api/drivers/{id}/location
+        mockMvc.perform(patch("/api/drivers/{id}/location", JAN_ID).with(TestAuth.dispatcher())
+                        .contentType(MediaType.APPLICATION_JSON).content(location(52.0, 20.0)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.title").value("Business rule violation"));
+
+        // Kierowca bez zlecenia — dyspozytor może zmienić położenie
+        mockMvc.perform(patch("/api/drivers/{id}/location", PIOTR_ID).with(TestAuth.dispatcher())
+                        .contentType(MediaType.APPLICATION_JSON).content(location(50.2649, 19.0238)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.locationSource").value("MANUAL"));
     }
 
     @Test

@@ -95,15 +95,8 @@ public class SecurityConfig {
     }
 
     /**
-     * Reguły dostępu (sprawdzane od góry, wygrywa pierwsza pasująca):
-     * <ol>
-     *   <li>bez tokenu: logowanie, /api/ping, Swagger, /error;</li>
-     *   <li>DRIVER: tylko /api/me/** (własne dane) — dyspozytor nie ma własnego kierowcy;</li>
-     *   <li>DISPATCHER i DRIVER: odczyt mapy — GET /api/nodes, /api/edges, /api/routes;</li>
-     *   <li>DISPATCHER: cała reszta API;</li>
-     *   <li>wszystko inne — odmowa (zasada „domyślnie zabronione”).</li>
-     * </ol>
-     * Brak tokenu → 401, token z niewłaściwą rolą → 403.
+     * Reguły dostępu: wygrywa pierwsza pasująca, wszystko niewymienione jest zabronione.
+     * /api/me/** tylko DRIVER — dyspozytor nie ma własnego kierowcy. Brak tokenu → 401, zła rola → 403.
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, SecurityProblemHandler problemHandler,

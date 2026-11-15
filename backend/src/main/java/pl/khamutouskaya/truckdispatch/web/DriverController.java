@@ -59,7 +59,7 @@ public class DriverController {
     }
 
     @PatchMapping("/{id}/location")
-    @Operation(summary = "Set driver location manually")
+    @Operation(summary = "Set driver location manually (409 during an active order — then the simulator records it)")
     public DriverResponse updateLocation(@PathVariable Long id, @Valid @RequestBody DriverLocationRequest request) {
         return driverService.updateLocation(id, request);
     }

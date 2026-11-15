@@ -14,8 +14,10 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import java.util.List;
 
-// Przechwytuje wyjątki ze wszystkich kontrolerów i zamienia je
-// na jednolity format odpowiedzi ProblemDetail (RFC 9457, application/problem+json)
+/**
+ * Przechwytuje wyjątki ze wszystkich kontrolerów i zamienia je
+ * na jednolity format odpowiedzi ProblemDetail (RFC 9457, application/problem+json)
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -53,7 +55,7 @@ public class GlobalExceptionHandler {
         return problem(HttpStatus.CONFLICT, "Business rule violation", ex.getMessage());
     }
 
-    // Wywoływany, gdy ciało z @Valid @RequestBody nie przeszło walidacji adnotacji Jakarta Validation
+    // Ciało z @Valid @RequestBody nie przeszło walidacji
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidation(MethodArgumentNotValidException ex) {
         List<FieldViolation> errors = ex.getBindingResult().getFieldErrors().stream()

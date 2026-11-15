@@ -4,7 +4,9 @@ import pl.khamutouskaya.truckdispatch.algorithm.assignment.Candidate;
 import pl.khamutouskaya.truckdispatch.algorithm.assignment.Criterion;
 import pl.khamutouskaya.truckdispatch.domain.TransportOrder;
 
-// K3: godziny jazdy, które zostaną kierowcy na dziś po zleceniu — elastyczność na kolejne zadania
+/**
+ * K3: godziny jazdy, które zostaną kierowcy na dziś po zleceniu — elastyczność na kolejne zadania
+ */
 public class RemainingDrivingTodayCriterion implements Criterion {
 
     @Override

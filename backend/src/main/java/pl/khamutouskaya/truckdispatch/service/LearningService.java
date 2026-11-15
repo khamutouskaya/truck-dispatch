@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Samouczenie po wykonanym zleceniu (docs/karta-i-algorytm.md, krok 11):
+ * Samouczenie po wykonanym zleceniu:
  * ślad GPS → rzeczywisty czas jazdy po każdej krawędzi (TrackProjector) →
  * delayFactor = 0,8 · stary + 0,2 · (fakt / czas bazowy) → zapis w road_edge → przeładowanie grafu.
  */

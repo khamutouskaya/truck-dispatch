@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
 /**
- * Przykład z docs/karta-i-algorytm.md, część 4: zlecenie Łódź → Kraków, 18 t, plandeka (TILT),
+ * Przykład policzony ręcznie: zlecenie Łódź → Kraków, 18 t, plandeka (TILT),
  * termin załadunku 12:00, termin dostawy 20:00, start 08:00.
  */
 class CandidateFilterTest {

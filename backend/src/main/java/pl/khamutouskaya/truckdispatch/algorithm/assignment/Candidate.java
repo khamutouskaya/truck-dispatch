@@ -6,8 +6,6 @@ import pl.khamutouskaya.truckdispatch.algorithm.worktime.WorkTimeSimulation;
  * Kandydat, który przeszedł odsiew i dla którego policzono trasy i symulację czasu pracy.
  * Zawiera wszystko, czego potrzebują kryteria K1–K5.
  *
- * @param driverId            id kierowcy
- * @param driverName          imię i nazwisko (do wyjaśnienia decyzji)
  * @param vehicleCapacityKg   ładowność pojazdu kierowcy [kg] (K5)
  * @param distanceToLoadingKm długość dojazdu do załadunku [km] (K1)
  * @param simulation          symulacja zlecenia od chwili „teraz” (K2, K3, K4)

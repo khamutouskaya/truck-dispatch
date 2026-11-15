@@ -7,7 +7,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import pl.khamutouskaya.truckdispatch.service.SimulationService;
 
-// Tylko gdy simulator.enabled = true: co tickMs przesuwa wszystkie aktywne zlecenia o jeden krok czasu
+/**
+ * Tylko gdy simulator.enabled = true: co tickMs przesuwa wszystkie aktywne zlecenia o jeden krok czasu
+ */
 @Configuration
 @EnableScheduling
 @ConditionalOnProperty(prefix = "simulator", name = "enabled", havingValue = "true")

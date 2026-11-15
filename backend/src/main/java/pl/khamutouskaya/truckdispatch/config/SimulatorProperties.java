@@ -8,7 +8,7 @@ import java.util.List;
  * Ustawienia symulatora ruchu kierowców (application.yaml, simulator.*).
  *
  * @param enabled    czy uruchamiać symulator co tickMs (w testach wyłączony)
- * @param tickMs     odstęp między tickami w czasie rzeczywistym [ms]
+ * @param tickMs     odstęp między krokami w czasie rzeczywistym [ms]
  * @param speedup    przyspieszenie czasu: 60 → 1 s rzeczywista = 1 min symulacji
  * @param seed       ziarno generatora szumu — powtarzalny eksperyment
  * @param noise      szum czasu przejazdu: ±noise (0,10 = ±10%)
@@ -36,7 +36,7 @@ public record SimulatorProperties(
     public record Congestion(String from, String to, double factor) {
     }
 
-    // O ile minut symulacji przesuwa się czas w jednym ticku
+    // O ile minut symulacji przesuwa się czas w jednym kroku
     public double stepMin() {
         return tickMs / 60_000.0 * speedup;
     }

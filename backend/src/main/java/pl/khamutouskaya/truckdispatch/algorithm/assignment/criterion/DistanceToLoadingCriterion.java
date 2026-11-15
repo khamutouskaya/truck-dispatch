@@ -4,7 +4,9 @@ import pl.khamutouskaya.truckdispatch.algorithm.assignment.Candidate;
 import pl.khamutouskaya.truckdispatch.algorithm.assignment.Criterion;
 import pl.khamutouskaya.truckdispatch.domain.TransportOrder;
 
-// K1: km dojazdu do załadunku — mniej pustych kilometrów, mniej paliwa
+/**
+ * K1: km dojazdu do załadunku — mniej pustych kilometrów, mniej paliwa
+ */
 public class DistanceToLoadingCriterion implements Criterion {
 
     @Override

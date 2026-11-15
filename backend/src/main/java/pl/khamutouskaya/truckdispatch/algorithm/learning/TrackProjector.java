@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Rzeczywisty czas jazdy po każdej krawędzi trasy, odtworzony ze śladu GPS (docs/karta-i-algorytm.md, krok 2 i 11).
+ * Rzeczywisty czas jazdy po każdej krawędzi trasy, odtworzony ze śladu GPS.
  * <ol>
  *   <li>Każdy punkt rzutujemy na geometrię trasy: t = (AP·AB) / |AB|², obcięte do [0, 1], w lokalnym układzie
  *       x = Δlon·cos(lat)·111,32 km, y = Δlat·110,57 km. Wynik: przebyta droga s [km od początku trasy].</li>

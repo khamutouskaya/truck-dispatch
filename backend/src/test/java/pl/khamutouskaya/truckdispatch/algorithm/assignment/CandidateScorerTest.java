@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.within;
 
 /**
- * Przykład z docs/karta-i-algorytm.md, część 4: zlecenie Łódź → Kraków, 18 t, start 08:00.
+ * Przykład policzony ręcznie: zlecenie Łódź → Kraków, 18 t, start 08:00.
  * Symulacje kierowców A i E liczone prawdziwym WorkTimeSimulator — cały łańcuch od czasu jazdy do score.
  */
 class CandidateScorerTest {
@@ -59,7 +59,7 @@ class CandidateScorerTest {
 
     @Test
     void baseVersionExampleGivesA085AndE045() {
-        // Dokument, „Ten sam przykład w wersji bazowej”: A = 0,85, E = 0,45
+        // Wersja bazowa (kandydaci A i E): A = 0,85, E = 0,45
         List<CandidateScore> ranking = CandidateScorer.rank(List.of(driverE(), driverA()), ORDER,
                 DefaultCriteria.withDefaultWeights());
 
@@ -69,7 +69,7 @@ class CandidateScorerTest {
         assertThat(a.score()).isCloseTo(0.85, within(EPS));
         assertThat(e.score()).isCloseTo(0.45, within(EPS));
 
-        // Surowe wartości jak w tabeli „Krok 7”
+        // Surowe wartości kryteriów przed normalizacją
         assertThat(a.rawValues().get("distanceToLoadingKm")).isEqualTo(135.0);
         assertThat(a.rawValues().get("timeToLoadingH")).isCloseTo(101 / 60.0, within(EPS));      // 1,68 h
         assertThat(a.rawValues().get("remainingDrivingTodayH")).isCloseTo(95 / 60.0, within(EPS)); // 1,58 h
@@ -86,8 +86,8 @@ class CandidateScorerTest {
     }
 
     @Test
-    void fullExampleWithThreeCandidatesMatchesDocumentWithoutRiskPenalty() {
-        // Dokument: A 0,783; D 0,531 (przed karą ryzyka); E 0,475
+    void fullExampleWithThreeCandidates() {
+        // Oczekiwane: A 0,783; D 0,531; E 0,475
         List<CandidateScore> ranking = CandidateScorer.rank(List.of(driverA(), driverD(), driverE()), ORDER,
                 DefaultCriteria.withDefaultWeights());
 

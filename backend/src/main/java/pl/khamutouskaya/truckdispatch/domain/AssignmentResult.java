@@ -44,7 +44,7 @@ public class AssignmentResult {
     @Column(name = "score")
     private Double score;
 
-    // JSON z wagami, rankingiem kandydatów i powodami odrzucenia (struktura — w AssignmentService)
+    // JSON z wagami, rankingiem kandydatów i powodami odrzucenia (struktura — dto/AssignmentDecision)
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "details", columnDefinition = "jsonb", nullable = false)
     private String details;

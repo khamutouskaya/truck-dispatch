@@ -7,7 +7,9 @@ import pl.khamutouskaya.truckdispatch.domain.VehicleType;
 
 import java.time.LocalDateTime;
 
-// Tutaj tylko walidacja formy. Reguły biznesowe (terminy, punkty, ładowność) — w TransportOrderService
+/**
+ * Tutaj tylko walidacja formy. Reguły biznesowe (terminy, punkty, ładowność) — w TransportOrderService
+ */
 public record TransportOrderRequest(
         @NotNull(message = "Loading node is required")
         Long loadingNodeId,

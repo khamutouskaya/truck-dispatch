@@ -10,7 +10,7 @@ import pl.khamutouskaya.truckdispatch.domain.Vehicle;
 import java.util.Optional;
 
 /**
- * Odsiew kandydatów w dwóch etapach (kroki 3 i 6 algorytmu, docs/karta-i-algorytm.md):
+ * Odsiew kandydatów w dwóch etapach:
  * <ol>
  *   <li>{@link #quickCheck} — przed szukaniem tras, prawie bez kosztu; odpada większość nieodpowiednich;</li>
  *   <li>{@link #deadlineCheck} — po symulacji czasu pracy: terminy i limit tygodniowy.</li>

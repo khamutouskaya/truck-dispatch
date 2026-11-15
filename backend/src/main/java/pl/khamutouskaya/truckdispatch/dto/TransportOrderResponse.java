@@ -43,7 +43,7 @@ public record TransportOrderResponse(
                 order.getEstimatedUnloadingMin(),
                 order.getStatus(),
                 driver == null ? null : driver.getId(),
-                driver == null ? null : driver.getFirstName() + " " + driver.getLastName(),
+                driver == null ? null : driver.getFullName(),
                 order.getCreatedAt()
         );
     }

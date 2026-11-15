@@ -10,7 +10,6 @@ import pl.khamutouskaya.truckdispatch.domain.Terrain;
  *   v_eff = v_base(roadType) × k_surface(surfaceQuality) × k_terrain(terrain, loaded)   [km/h]
  *   t     = distanceKm / v_eff × 60 × delayFactor                                     [min]
  * </pre>
- * Wszystkie współczynniki są w tej jednej klasie. Klasa jest bezstanowa (same metody statyczne).
  */
 public final class EdgeTimeCalculator {
 

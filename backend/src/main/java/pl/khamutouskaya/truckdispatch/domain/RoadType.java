@@ -1,6 +1,8 @@
 package pl.khamutouskaya.truckdispatch.domain;
 
-// Klasa drogi; od niej zależy prędkość bazowa v_base (km/h)
+/**
+ * Klasa drogi; od niej zależy prędkość bazowa v_base (km/h)
+ */
 public enum RoadType {
     MOTORWAY,    // autostrada (A1, A2, A4…), 80 km/h
     EXPRESSWAY,  // droga ekspresowa (S3, S7, S8…), 75 km/h

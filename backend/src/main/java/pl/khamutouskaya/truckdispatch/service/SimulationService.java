@@ -28,7 +28,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,7 +49,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class SimulationService {
 
-    private static final Set<OrderStatus> ACTIVE = Set.of(OrderStatus.ASSIGNED, OrderStatus.IN_PROGRESS);
+    private static final Set<OrderStatus> ACTIVE_ORDER_STATUSES = Set.of(OrderStatus.ASSIGNED, OrderStatus.IN_PROGRESS);
 
     private final TransportOrderRepository transportOrderRepository;
     private final PlannedRouteLoader plannedRouteLoader;
@@ -60,7 +59,7 @@ public class SimulationService {
     private final SimulatorProperties properties;
     private final Clock clock;
 
-    // Pamięć podręczna osi czasu (odtwarzalna z bazy) — żeby nie budować jej co tick
+    // Pamięć podręczna osi czasu (odtwarzalna z bazy) — żeby nie budować jej w każdym kroku
     private final Map<Long, TripTimeline> timelineByOrderId = new ConcurrentHashMap<>();
 
     /**
@@ -70,7 +69,7 @@ public class SimulationService {
      */
     @Transactional
     public void advance(double stepMin) {
-        for (TransportOrder order : transportOrderRepository.findByStatusIn(ACTIVE, Sort.by("id"))) {
+        for (TransportOrder order : transportOrderRepository.findByStatusIn(ACTIVE_ORDER_STATUSES, Sort.by("id"))) {
             if (order.getAssignedDriver() != null) {
                 advanceOrder(order, stepMin);
             }
@@ -81,7 +80,7 @@ public class SimulationService {
         Driver driver = order.getAssignedDriver();
         var first = driverLocationRepository.findFirstByOrderIdOrderByRecordedAtAscIdAsc(order.getId());
 
-        // Pierwszy tick zlecenia: punkt startowy = obecne położenie kierowcy, t = 0
+        // Pierwszy krok zlecenia: punkt startowy = obecne położenie kierowcy, t = 0
         if (first.isEmpty()) {
             LocalDateTime start = LocalDateTime.now(clock);
             GeoPoint position = new GeoPoint(driver.getCurrentLat(), driver.getCurrentLon());
@@ -157,8 +156,8 @@ public class SimulationService {
         RoadNode loading = order.getLoadingNode();
         RoadNode unloading = order.getUnloadingNode();
         return TripTimeline.build(start,
-                route.empty(), PlannedRouteLoader.point(loading), handlingMin(order.getEstimatedLoadingMin(), loading),
-                route.loaded(), PlannedRouteLoader.point(unloading), handlingMin(order.getEstimatedUnloadingMin(), unloading),
+                route.empty(), EdgeGeometryReader.point(loading), order.getLoadingMin(),
+                route.loaded(), EdgeGeometryReader.point(unloading), order.getUnloadingMin(),
                 state, traffic);
     }
 
@@ -177,10 +176,6 @@ public class SimulationService {
             result.put(edge.id(), c.factor());
         }
         return result;
-    }
-
-    private static int handlingMin(Integer estimated, RoadNode node) {
-        return estimated != null ? estimated : node.getDefaultHandlingMin();
     }
 
     private static double minutesBetween(LocalDateTime from, LocalDateTime to) {

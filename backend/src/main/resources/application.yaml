@@ -27,7 +27,7 @@ cors:
   allowed-origins:
     - http://localhost:5173
 
-# Wagi kryteriów algorytmu przydziału (suma = 1), docs/karta-i-algorytm.md, krok 9
+# Wagi kryteriów algorytmu przydziału (suma = 1)
 assignment:
   weights:
     distance-to-loading: 0.25      # K1: km do załadunku (mniej = lepiej)
@@ -36,7 +36,7 @@ assignment:
     stop-count: 0.15               # K4: liczba przerw i odpoczynków (mniej = lepiej)
     vehicle-utilization: 0.15      # K5: masa ładunku / ładowność (więcej = lepiej)
 
-# Symulator ruchu kierowców (etap 8): przesuwa kierowców po zaplanowanych trasach i zapisuje historię GPS
+# Symulator ruchu kierowców: przesuwa kierowców po zaplanowanych trasach i zapisuje historię GPS
 simulator:
   enabled: true
   tick-ms: 1000        # tick co 1 s czasu rzeczywistego

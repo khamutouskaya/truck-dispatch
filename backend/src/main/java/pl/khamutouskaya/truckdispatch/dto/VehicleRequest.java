@@ -7,7 +7,9 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import pl.khamutouskaya.truckdispatch.domain.VehicleType;
 
-// Typy opakowujące (Integer, Double), aby brakujące pole było null i zostało wychwycone przez @NotNull
+/**
+ * Typy opakowujące (Integer, Double), aby brakujące pole było null i zostało wychwycone przez @NotNull
+ */
 public record VehicleRequest(
         @NotBlank(message = "Registration number is required")
         @Size(max = 15, message = "Registration number must be at most 15 characters")

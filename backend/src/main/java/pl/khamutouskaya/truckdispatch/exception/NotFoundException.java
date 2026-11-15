@@ -1,6 +1,8 @@
 package pl.khamutouskaya.truckdispatch.exception;
 
-// Żądany obiekt nie istnieje → 404 Not Found
+/**
+ * Żądany obiekt nie istnieje → 404 Not Found
+ */
 public class NotFoundException extends RuntimeException {
 
     public NotFoundException(String message) {

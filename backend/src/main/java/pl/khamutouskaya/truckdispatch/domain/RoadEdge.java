@@ -17,7 +17,9 @@ import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-// Krawędź grafu dróg: odcinek w jednym kierunku (jedna droga = dwie krawędzie)
+/**
+ * Krawędź grafu dróg: odcinek w jednym kierunku (jedna droga = dwie krawędzie)
+ */
 @Entity
 @Table(name = "road_edge")
 @Getter
@@ -62,7 +64,7 @@ public class RoadEdge {
     @Column(name = "delay_factor", nullable = false)
     private double delayFactor = 1.0;
 
-    // Tekst JSON: [[lon, lat], ...]; przekazywany bez zmian do frontendu
+    // Tekst JSON: [[lon, lat], ...] (kolejność GeoJSON); API zwraca [lat, lon]
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "geometry", columnDefinition = "jsonb")
     private String geometry;

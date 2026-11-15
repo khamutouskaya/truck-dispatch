@@ -10,7 +10,9 @@ import pl.khamutouskaya.truckdispatch.domain.TransportOrder;
 import pl.khamutouskaya.truckdispatch.dto.TransportOrderRequest;
 import pl.khamutouskaya.truckdispatch.dto.TransportOrderResponse;
 import pl.khamutouskaya.truckdispatch.exception.ConflictException;
+import pl.khamutouskaya.truckdispatch.dto.OrderTrackResponse;
 import pl.khamutouskaya.truckdispatch.exception.NotFoundException;
+import pl.khamutouskaya.truckdispatch.repository.DriverLocationRepository;
 import pl.khamutouskaya.truckdispatch.repository.RoadNodeRepository;
 import pl.khamutouskaya.truckdispatch.repository.TransportOrderRepository;
 import pl.khamutouskaya.truckdispatch.repository.VehicleRepository;
@@ -31,6 +33,7 @@ public class TransportOrderService {
     private final RoadNodeRepository roadNodeRepository;
     private final VehicleRepository vehicleRepository;
     private final AssignmentService assignmentService;
+    private final DriverLocationRepository driverLocationRepository;
 
     // status == null → wszystkie zlecenia
     public List<TransportOrderResponse> findAll(OrderStatus status) {
@@ -80,12 +83,22 @@ public class TransportOrderService {
         return TransportOrderResponse.from(order);
     }
 
+    // Ślad GPS zlecenia w kolejności czasu (mapa: faktycznie przejechana trasa)
+    public OrderTrackResponse findTrack(Long id) {
+        TransportOrder order = getOrder(id);
+        List<OrderTrackResponse.TrackPoint> points = driverLocationRepository.findByOrderIdOrderByRecordedAtAscIdAsc(id)
+                .stream()
+                .map(l -> new OrderTrackResponse.TrackPoint(l.getLat(), l.getLon(), l.getRecordedAt(), l.getSource()))
+                .toList();
+        Long driverId = order.getAssignedDriver() != null ? order.getAssignedDriver().getId() : null;
+        return new OrderTrackResponse(order.getId(), order.getStatus(), driverId, points);
+    }
+
     private TransportOrder getOrder(Long id) {
         return transportOrderRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Order", id));
     }
 
-    // Sprawdza reguły biznesowe i dopiero potem przenosi dane do encji
     private void applyRequest(TransportOrder order, TransportOrderRequest request) {
         if (request.loadingNodeId().equals(request.unloadingNodeId())) {
             throw new ConflictException("Loading and unloading node must be different");

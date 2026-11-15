@@ -10,7 +10,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-// Punkt na mapie: miasto lub węzeł drogowy (wierzchołek grafu dróg)
+/**
+ * Punkt na mapie: miasto lub węzeł drogowy (wierzchołek grafu dróg)
+ */
 @Entity
 @Table(name = "road_node")
 @Getter
@@ -31,7 +33,7 @@ public class RoadNode {
     @Column(name = "lon", nullable = false)
     private double lon;
 
-    // Domyślny czas załadunku/rozładunku w tym punkcie, minuty
+    // Domyślny czas załadunku/rozładunku w tym punkcie [min]
     @Column(name = "default_handling_min", nullable = false)
     private int defaultHandlingMin = 60;
 }

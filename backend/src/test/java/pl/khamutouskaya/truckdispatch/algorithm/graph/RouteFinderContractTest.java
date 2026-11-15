@@ -28,7 +28,7 @@ abstract class RouteFinderContractTest {
 
     protected abstract RouteFinder finder();
 
-    // --- Przykład z docs/karta-i-algorytm.md, część 2.1 ---
+    // --- Przykład policzony ręcznie: Warszawa – Skierniewice – Łódź ---
 
     private static final long WARSZAWA = 1, SKIERNIEWICE = 2, LODZ = 3;
 

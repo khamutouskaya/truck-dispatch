@@ -2,10 +2,8 @@ package pl.khamutouskaya.truckdispatch.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import pl.khamutouskaya.truckdispatch.algorithm.simulation.GeoPoint;
 import pl.khamutouskaya.truckdispatch.algorithm.simulation.PlannedEdge;
 import pl.khamutouskaya.truckdispatch.domain.OrderRouteEdge;
-import pl.khamutouskaya.truckdispatch.domain.RoadNode;
 import pl.khamutouskaya.truckdispatch.domain.RouteLeg;
 import pl.khamutouskaya.truckdispatch.repository.OrderRouteEdgeRepository;
 
@@ -26,8 +24,6 @@ class PlannedRouteLoader {
     private final EdgeGeometryReader edgeGeometryReader;
 
     /**
-     * @param empty   krawędzie dojazdu pustym
-     * @param loaded  krawędzie z ładunkiem
      * @param bySeq   encje trasy po seq — do zapisu wyników samouczenia
      */
     record PlannedRoute(List<PlannedEdge> empty, List<PlannedEdge> loaded, Map<Integer, OrderRouteEdge> bySeq) {
@@ -50,9 +46,5 @@ class PlannedRouteLoader {
             bySeq.put(routeEdge.getSeq(), routeEdge);
         }
         return new PlannedRoute(empty, loaded, bySeq);
-    }
-
-    static GeoPoint point(RoadNode node) {
-        return EdgeGeometryReader.point(node);
     }
 }

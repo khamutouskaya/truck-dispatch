@@ -11,7 +11,9 @@ import org.springframework.web.bind.annotation.RestController;
 import pl.khamutouskaya.truckdispatch.dto.AssignmentDecision;
 import pl.khamutouskaya.truckdispatch.service.AssignmentService;
 
-// Algorytm przydziału dla zlecenia. Automatycznie uruchamia się też przy POST /api/orders.
+/**
+ * Algorytm przydziału dla zlecenia. Automatycznie uruchamia się też przy POST /api/orders.
+ */
 @RestController
 @RequestMapping("/api/orders/{orderId}")
 @RequiredArgsConstructor
