@@ -50,8 +50,6 @@ import static org.assertj.core.api.Assertions.within;
  * <p>
  * Błąd ETA podróży n = |prognoza − fakt| / fakt, gdzie prognoza = koniec z decyzji przydziału − chwila decyzji,
  * fakt = czas między pierwszym a ostatnim punktem GPS (próbka co 1 min → fakt zawyżony o ≤ 1 min, ≤ 0,6%).
- * Wynik: tabela w konsoli i experiments/results/eta-learning.csv w katalogu głównym repozytorium (do wykresu).
- * Tag "experiment": pomijany w zwykłym mvn test, uruchomienie: ./mvnw test -Pexperiment.
  */
 @Tag("experiment")
 @SpringBootTest

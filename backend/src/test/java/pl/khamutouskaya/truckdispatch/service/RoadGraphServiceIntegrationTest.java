@@ -10,7 +10,7 @@ import pl.khamutouskaya.truckdispatch.repository.RoadEdgeRepository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// Test integracyjny na prawdziwej bazie z migracjami V1–V5 (wymaga uruchomionego PostgreSQL w Dockerze)
+// Test integracyjny na prawdziwej bazie z migracjami V1–V5
 @SpringBootTest
 class RoadGraphServiceIntegrationTest {
 

@@ -28,8 +28,7 @@
 	</scm>
 	<properties>
 		<java.version>25</java.version>
-		<!-- Testy z tagiem "experiment" (długie, ~30 s) nie są uruchamiane w zwykłym mvn test;
-		     uruchomienie osobno: ./mvnw test -Pexperiment -->
+		<!-- Testy z tagiem "experiment" (długie, ~30 s) nie są uruchamiane w zwykłym mvn test -->
 		<test.groups></test.groups>
 		<test.excludedGroups>experiment</test.excludedGroups>
 	</properties>
@@ -167,7 +166,6 @@
 	</build>
 
 	<profiles>
-		<!-- Tylko eksperymenty: ./mvnw test -Pexperiment -->
 		<profile>
 			<id>experiment</id>
 			<properties>

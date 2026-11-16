@@ -11,12 +11,7 @@ wysyła jedno zapytanie do openrouteservice (profil driving-hgv, ciężarówka) 
 Klasa drogi, nawierzchnia, teren i ograniczenia pochodzą z edges.csv (ocena ekspercka).
 
 Odpowiedzi API są zapisywane w katalogu cache/, więc ponowne uruchomienie
-nie wysyła zapytań drugi raz (można np. poprawić CSV i wygenerować SQL bez API).
-
-Uruchomienie (z katalogu tools/road-graph):
-    export ORS_API_KEY=...        # klucza nie zapisujemy w repozytorium
-    python3 build_graph.py
-Wynik: backend/src/main/resources/db/migration/V5__road_graph.sql
+nie wysyła zapytań drugi raz.
 """
 
 import csv
