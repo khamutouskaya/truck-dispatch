@@ -29,5 +29,8 @@ public interface TransportOrderRepository extends JpaRepository<TransportOrder, 
 
     boolean existsByAssignedDriverIdAndStatusIn(Long driverId, Collection<OrderStatus> statuses);
 
+    // Czy kierowca ma inne aktywne zlecenie poza wskazanym (przy anulowaniu)
+    boolean existsByAssignedDriverIdAndStatusInAndIdNot(Long driverId, Collection<OrderStatus> statuses, Long orderId);
+
     boolean existsByAssignedDriverId(Long driverId);
 }

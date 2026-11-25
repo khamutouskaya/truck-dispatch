@@ -9,11 +9,13 @@ import pl.khamutouskaya.truckdispatch.domain.Vehicle;
 import pl.khamutouskaya.truckdispatch.dto.VehicleRequest;
 import pl.khamutouskaya.truckdispatch.dto.VehicleResponse;
 import pl.khamutouskaya.truckdispatch.exception.ConflictException;
+import pl.khamutouskaya.truckdispatch.exception.ErrorCode;
 import pl.khamutouskaya.truckdispatch.exception.NotFoundException;
 import pl.khamutouskaya.truckdispatch.repository.DriverRepository;
 import pl.khamutouskaya.truckdispatch.repository.VehicleRepository;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -85,13 +87,17 @@ public class VehicleService {
         vehicleRepository.findByDriverId(driverId)
                 .filter(other -> !other.getId().equals(vehicle.getId()))
                 .ifPresent(other -> {
-                    throw new ConflictException("Driver with id " + driverId
-                            + " already has vehicle " + other.getRegistrationNumber());
+                    throw new ConflictException(ErrorCode.DRIVER_ALREADY_HAS_VEHICLE,
+                            "Driver with id " + driverId + " already has vehicle " + other.getRegistrationNumber(),
+                            Map.of("driverName", driver.getFullName(),
+                                    "registrationNumber", other.getRegistrationNumber()));
                 });
         return driver;
     }
 
     private ConflictException duplicateRegistration(String registrationNumber) {
-        return new ConflictException("Vehicle with registration number " + registrationNumber + " already exists");
+        return new ConflictException(ErrorCode.REGISTRATION_NUMBER_TAKEN,
+                "Vehicle with registration number " + registrationNumber + " already exists",
+                Map.of("registrationNumber", registrationNumber));
     }
 }

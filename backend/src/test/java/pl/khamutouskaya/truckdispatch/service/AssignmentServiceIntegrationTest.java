@@ -17,6 +17,7 @@ import pl.khamutouskaya.truckdispatch.dto.AssignmentDecision;
 import pl.khamutouskaya.truckdispatch.dto.AssignmentDecision.RankedCandidate;
 import pl.khamutouskaya.truckdispatch.dto.AssignmentDecision.RejectedDriver;
 import pl.khamutouskaya.truckdispatch.exception.ConflictException;
+import pl.khamutouskaya.truckdispatch.exception.ErrorCode;
 import pl.khamutouskaya.truckdispatch.exception.NotFoundException;
 import pl.khamutouskaya.truckdispatch.repository.AssignmentResultRepository;
 import pl.khamutouskaya.truckdispatch.repository.DriverRepository;
@@ -145,8 +146,11 @@ class AssignmentServiceIntegrationTest {
 
     @Test
     void orderStaysNewWhenNobodyCanMakeIt() {
-        // Termin załadunku minął godzinę temu — nikt nie zdąży, ale decyzja z powodami i tak jest zapisana
-        TransportOrder order = newOrder(-1);
+        // Załadunek w Krakowie za 30 min — nikt nie zdąży, ale decyzja z powodami i tak jest zapisana
+        TransportOrder order = newOrder(6);
+        order.setLoadingNode(node("Kraków"));
+        order.setLoadingDeadline(LocalDateTime.now().plusMinutes(30));
+        transportOrderRepository.saveAndFlush(order);
 
         AssignmentDecision decision = assignmentService.assign(order.getId());
 
@@ -154,6 +158,8 @@ class AssignmentServiceIntegrationTest {
         assertThat(decision.ranking()).isEmpty();
         assertThat(order.getStatus()).isEqualTo(OrderStatus.NEW);
         assertThat(reasons(decision).get(1L)).isEqualTo(RejectionReason.LATE_LOADING);
+        RejectedDriver lodzTanker = decision.rejected().stream().filter(r -> r.driverId() == 3L).findFirst().orElseThrow();
+        assertThat(lodzTanker.reasons()).containsExactly(RejectionReason.TYPE, RejectionReason.LATE_LOADING);
 
         AssignmentResult saved = assignmentResultRepository.findByOrderIdOrderByCreatedAtDescIdDesc(order.getId()).getFirst();
         assertThat(saved.getDriver()).isNull();
@@ -181,6 +187,18 @@ class AssignmentServiceIntegrationTest {
         assertThatThrownBy(() -> assignmentService.assign(order.getId()))
                 .isInstanceOf(ConflictException.class)
                 .hasMessageContaining("ASSIGNED");
+    }
+
+    @Test
+    void orderWithPassedLoadingDeadlineIsNotAssigned() {
+        TransportOrder order = newOrder(-2);
+
+        assertThatThrownBy(() -> assignmentService.assign(order.getId()))
+                .isInstanceOf(ConflictException.class)
+                .extracting(e -> ((ConflictException) e).getCode())
+                .isEqualTo(ErrorCode.LOADING_DEADLINE_PASSED);
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.NEW);
+        assertThat(assignmentResultRepository.findByOrderIdOrderByCreatedAtDescIdDesc(order.getId())).isEmpty();
     }
 
     @Test

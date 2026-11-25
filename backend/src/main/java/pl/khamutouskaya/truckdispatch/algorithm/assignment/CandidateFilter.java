@@ -7,16 +7,17 @@ import pl.khamutouskaya.truckdispatch.domain.RoadNode;
 import pl.khamutouskaya.truckdispatch.domain.TransportOrder;
 import pl.khamutouskaya.truckdispatch.domain.Vehicle;
 
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Odsiew kandydatów w dwóch etapach:
+ * Sprawdzenie kandydata. Każda metoda zwraca wszystkie niespełnione warunki swojego etapu (pusta lista = przechodzi):
  * <ol>
- *   <li>{@link #quickCheck} — przed szukaniem tras, prawie bez kosztu; odpada większość nieodpowiednich;</li>
+ *   <li>{@link #dataCheck} — brak pojazdu lub położenia; bez nich dalszych etapów nie da się policzyć;</li>
+ *   <li>{@link #quickCheck} — nadwozie, ładowność, odległość w linii prostej;</li>
  *   <li>{@link #deadlineCheck} — po symulacji czasu pracy: terminy i limit tygodniowy.</li>
  * </ol>
  * Powód NO_ROUTE ustala serwis, gdy RouteFinder zwróci pustą trasę.
- * Każda metoda zwraca pierwszy napotkany powód albo Optional.empty(), jeśli kierowca przechodzi dalej.
  */
 public final class CandidateFilter {
 
@@ -27,43 +28,51 @@ public final class CandidateFilter {
     }
 
     /**
-     * Szybki odsiew: dane kierowcy, nadwozie, ładowność, odległość w linii prostej.
-     *
      * @param vehicle pojazd kierowcy albo null, jeśli kierowca go nie ma
      */
-    public static Optional<RejectionReason> quickCheck(Driver driver, Vehicle vehicle, TransportOrder order) {
+    public static List<RejectionReason> dataCheck(Driver driver, Vehicle vehicle) {
+        List<RejectionReason> reasons = new ArrayList<>();
         if (vehicle == null) {
-            return Optional.of(RejectionReason.NO_VEHICLE);
+            reasons.add(RejectionReason.NO_VEHICLE);
         }
         if (driver.getCurrentLat() == null || driver.getCurrentLon() == null) {
-            return Optional.of(RejectionReason.NO_LOCATION);
+            reasons.add(RejectionReason.NO_LOCATION);
         }
+        return reasons;
+    }
+
+    /**
+     * Wywoływać dla kierowcy, który przeszedł {@link #dataCheck}.
+     */
+    public static List<RejectionReason> quickCheck(Driver driver, Vehicle vehicle, TransportOrder order) {
+        List<RejectionReason> reasons = new ArrayList<>();
         if (vehicle.getType() != order.getRequiredVehicleType()) {
-            return Optional.of(RejectionReason.TYPE);
+            reasons.add(RejectionReason.TYPE);
         }
         if (vehicle.getCapacityKg() < order.getCargoWeightKg() || vehicle.getVolumeM3() < order.getCargoVolumeM3()) {
-            return Optional.of(RejectionReason.CAPACITY);
+            reasons.add(RejectionReason.CAPACITY);
         }
         if (straightDistanceToLoadingKm(driver, order) > MAX_STRAIGHT_DISTANCE_KM) {
-            return Optional.of(RejectionReason.TOO_FAR);
+            reasons.add(RejectionReason.TOO_FAR);
         }
-        return Optional.empty();
+        return reasons;
     }
 
     /**
      * Filtr twardy po symulacji. Termin spełniony także wtedy, gdy przyjazd jest dokładnie o czasie.
      */
-    public static Optional<RejectionReason> deadlineCheck(WorkTimeSimulation simulation, TransportOrder order) {
+    public static List<RejectionReason> deadlineCheck(WorkTimeSimulation simulation, TransportOrder order) {
+        List<RejectionReason> reasons = new ArrayList<>();
         if (simulation.arrivalAtLoading().isAfter(order.getLoadingDeadline())) {
-            return Optional.of(RejectionReason.LATE_LOADING);
+            reasons.add(RejectionReason.LATE_LOADING);
         }
         if (simulation.finish().isAfter(order.getDeliveryDeadline())) {
-            return Optional.of(RejectionReason.LATE_DELIVERY);
+            reasons.add(RejectionReason.LATE_DELIVERY);
         }
         if (simulation.weeklyLimitExceeded()) {
-            return Optional.of(RejectionReason.WEEKLY_LIMIT);
+            reasons.add(RejectionReason.WEEKLY_LIMIT);
         }
-        return Optional.empty();
+        return reasons;
     }
 
     // Odległość w linii prostej od kierowcy do miejsca załadunku [km]

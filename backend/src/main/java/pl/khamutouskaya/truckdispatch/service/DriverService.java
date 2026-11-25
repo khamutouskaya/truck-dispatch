@@ -5,6 +5,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.khamutouskaya.truckdispatch.domain.Driver;
+import pl.khamutouskaya.truckdispatch.domain.Vehicle;
 import pl.khamutouskaya.truckdispatch.domain.DriverLocation;
 import pl.khamutouskaya.truckdispatch.domain.DriverStatus;
 import pl.khamutouskaya.truckdispatch.domain.LocationSource;
@@ -17,6 +18,7 @@ import pl.khamutouskaya.truckdispatch.dto.MyProfileResponse;
 import pl.khamutouskaya.truckdispatch.dto.TransportOrderResponse;
 import pl.khamutouskaya.truckdispatch.dto.VehicleResponse;
 import pl.khamutouskaya.truckdispatch.exception.ConflictException;
+import pl.khamutouskaya.truckdispatch.exception.ErrorCode;
 import pl.khamutouskaya.truckdispatch.exception.NotFoundException;
 import pl.khamutouskaya.truckdispatch.repository.DriverLocationRepository;
 import pl.khamutouskaya.truckdispatch.repository.DriverRepository;
@@ -25,6 +27,7 @@ import pl.khamutouskaya.truckdispatch.repository.VehicleRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -79,8 +82,10 @@ public class DriverService {
     public DriverResponse updateLocation(Long id, DriverLocationRequest request) {
         Driver driver = getDriver(id);
         if (transportOrderRepository.existsByAssignedDriverIdAndStatusIn(id, ACTIVE_ORDER_STATUSES)) {
-            throw new ConflictException("Location cannot be changed during an active order (ASSIGNED or IN_PROGRESS): "
-                    + "it is recorded by the simulator and used to learn travel times");
+            throw new ConflictException(ErrorCode.LOCATION_LOCKED_DURING_ORDER,
+                    "Location cannot be changed during an active order (ASSIGNED or IN_PROGRESS): "
+                            + "it is recorded by the simulator and used to learn travel times",
+                    Map.of("driverName", driver.getFullName()));
         }
         recordManualLocation(driver, request);
         return DriverResponse.from(driver);
@@ -95,11 +100,14 @@ public class DriverService {
         return new MyProfileResponse(DriverResponse.from(driver), vehicle);
     }
 
-    // Własne zlecenia, najnowsze najpierw
     public List<TransportOrderResponse> findMyOrders(Long driverId) {
         getDriver(driverId);
+        // Wszystkie zlecenia są tego kierowcy — jego pojazd wystarczy odczytać raz
+        String registration = vehicleRepository.findByDriverId(driverId)
+                .map(Vehicle::getRegistrationNumber)
+                .orElse(null);
         return transportOrderRepository.findByAssignedDriverId(driverId, NEWEST_FIRST).stream()
-                .map(TransportOrderResponse::from)
+                .map(order -> TransportOrderResponse.from(order, registration))
                 .toList();
     }
 
@@ -137,13 +145,16 @@ public class DriverService {
         Driver driver = getDriver(id);
 
         if (transportOrderRepository.existsByAssignedDriverIdAndStatusIn(id, ACTIVE_ORDER_STATUSES)) {
-            throw new ConflictException("Driver with id " + id + " has active orders (ASSIGNED or IN_PROGRESS)");
+            throw new ConflictException(ErrorCode.DRIVER_HAS_ACTIVE_ORDERS,
+                    "Driver with id " + id + " has active orders (ASSIGNED or IN_PROGRESS)",
+                    Map.of("driverName", driver.getFullName()));
         }
         // Zrealizowane i anulowane zlecenia odwołują się do kierowcy (klucz obcy) i przechowują historię,
         // dlatego takiego kierowcy nie usuwamy — można go przenieść do OFF_DUTY
         if (transportOrderRepository.existsByAssignedDriverId(id)) {
-            throw new ConflictException("Driver with id " + id
-                    + " has order history and cannot be deleted; set status OFF_DUTY instead");
+            throw new ConflictException(ErrorCode.DRIVER_HAS_ORDER_HISTORY,
+                    "Driver with id " + id + " has order history and cannot be deleted; set status OFF_DUTY instead",
+                    Map.of("driverName", driver.getFullName()));
         }
 
         // Pojazd zostaje we flocie, ale bez kierowcy

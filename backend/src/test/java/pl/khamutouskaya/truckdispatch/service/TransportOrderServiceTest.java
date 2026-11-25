@@ -6,24 +6,30 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import pl.khamutouskaya.truckdispatch.domain.Driver;
+import pl.khamutouskaya.truckdispatch.domain.DriverStatus;
 import pl.khamutouskaya.truckdispatch.domain.OrderStatus;
 import pl.khamutouskaya.truckdispatch.domain.RoadNode;
 import pl.khamutouskaya.truckdispatch.domain.TransportOrder;
+import pl.khamutouskaya.truckdispatch.domain.Vehicle;
 import pl.khamutouskaya.truckdispatch.domain.VehicleType;
 import pl.khamutouskaya.truckdispatch.dto.TransportOrderRequest;
 import pl.khamutouskaya.truckdispatch.dto.TransportOrderResponse;
 import pl.khamutouskaya.truckdispatch.exception.ConflictException;
+import pl.khamutouskaya.truckdispatch.exception.ErrorCode;
 import pl.khamutouskaya.truckdispatch.exception.NotFoundException;
 import pl.khamutouskaya.truckdispatch.repository.RoadNodeRepository;
 import pl.khamutouskaya.truckdispatch.repository.TransportOrderRepository;
 import pl.khamutouskaya.truckdispatch.repository.VehicleRepository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -115,10 +121,25 @@ class TransportOrderServiceTest {
         when(roadNodeRepository.findById(GDANSK_ID)).thenReturn(Optional.of(gdansk));
         when(vehicleRepository.existsByTypeAndCapacityKgGreaterThanEqualAndVolumeM3GreaterThanEqual(
                 VehicleType.TILT, 18000, 70.0)).thenReturn(false);
+        Vehicle small = new Vehicle();
+        small.setCapacityKg(12000);
+        small.setVolumeM3(60.0);
+        Vehicle big = new Vehicle();
+        big.setCapacityKg(16000);
+        big.setVolumeM3(55.0);
+        when(vehicleRepository.findByType(VehicleType.TILT)).thenReturn(List.of(small, big));
 
         assertThatThrownBy(() -> transportOrderService.create(validRequest()))
                 .isInstanceOf(ConflictException.class)
-                .hasMessageContaining("No vehicle of type TILT");
+                .hasMessageContaining("No vehicle of type TILT")
+                .satisfies(e -> {
+                    ConflictException conflict = (ConflictException) e;
+                    assertThat(conflict.getCode()).isEqualTo(ErrorCode.NO_VEHICLE_FOR_CARGO);
+                    assertThat(conflict.getParams())
+                            .containsEntry("vehicleType", "TILT")
+                            .containsEntry("maxCapacityKg", 16000)
+                            .containsEntry("maxVolumeM3", 60.0);
+                });
         verify(transportOrderRepository, never()).save(any());
     }
 
@@ -166,6 +187,51 @@ class TransportOrderServiceTest {
     }
 
     @Test
+    void cancellingAssignedOrderMakesDriverAvailableAgain() {
+        Driver driver = driver(3L, DriverStatus.ON_ROUTE);
+        TransportOrder order = existingOrder(10L, OrderStatus.ASSIGNED);
+        order.setAssignedDriver(driver);
+        when(transportOrderRepository.findById(10L)).thenReturn(Optional.of(order));
+        when(transportOrderRepository.existsByAssignedDriverIdAndStatusInAndIdNot(eq(3L), any(), eq(10L)))
+                .thenReturn(false);
+
+        TransportOrderResponse response = transportOrderService.cancel(10L);
+
+        assertThat(response.status()).isEqualTo(OrderStatus.CANCELLED);
+        assertThat(driver.getStatus()).isEqualTo(DriverStatus.AVAILABLE);
+        // Kierowca zostaje w zleceniu jako historia
+        assertThat(response.assignedDriverId()).isEqualTo(3L);
+    }
+
+    @Test
+    void cancellingKeepsDriverOnRouteWhenHeHasAnotherActiveOrder() {
+        Driver driver = driver(3L, DriverStatus.ON_ROUTE);
+        TransportOrder order = existingOrder(10L, OrderStatus.ASSIGNED);
+        order.setAssignedDriver(driver);
+        when(transportOrderRepository.findById(10L)).thenReturn(Optional.of(order));
+        when(transportOrderRepository.existsByAssignedDriverIdAndStatusInAndIdNot(eq(3L), any(), eq(10L)))
+                .thenReturn(true);
+
+        transportOrderService.cancel(10L);
+
+        assertThat(driver.getStatus()).isEqualTo(DriverStatus.ON_ROUTE);
+    }
+
+    @Test
+    void cancellingDoesNotOverrideManuallySetDriverStatus() {
+        // Dyspozytor ustawił odpoczynek ręcznie — anulowanie go nie zmienia
+        Driver driver = driver(3L, DriverStatus.RESTING);
+        TransportOrder order = existingOrder(10L, OrderStatus.ASSIGNED);
+        order.setAssignedDriver(driver);
+        when(transportOrderRepository.findById(10L)).thenReturn(Optional.of(order));
+
+        transportOrderService.cancel(10L);
+
+        assertThat(driver.getStatus()).isEqualTo(DriverStatus.RESTING);
+        verify(transportOrderRepository, never()).existsByAssignedDriverIdAndStatusInAndIdNot(any(), any(), any());
+    }
+
+    @Test
     void rejectsEditingOrderThatIsNotNew() {
         TransportOrder order = existingOrder(10L, OrderStatus.ASSIGNED);
         when(transportOrderRepository.findById(10L)).thenReturn(Optional.of(order));
@@ -195,6 +261,15 @@ class TransportOrderServiceTest {
                                           LocalDateTime loadingDeadline, LocalDateTime deliveryDeadline) {
         return new TransportOrderRequest(loadingId, unloadingId, 18000, 70.0, VehicleType.TILT,
                 loadingDeadline, deliveryDeadline, null, null);
+    }
+
+    private Driver driver(long id, DriverStatus status) {
+        Driver driver = new Driver();
+        driver.setId(id);
+        driver.setFirstName("Jan");
+        driver.setLastName("Kowalski");
+        driver.setStatus(status);
+        return driver;
     }
 
     private RoadNode node(long id, String name) {

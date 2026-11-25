@@ -21,7 +21,6 @@ import pl.khamutouskaya.truckdispatch.algorithm.worktime.DriverWorkState;
 import pl.khamutouskaya.truckdispatch.algorithm.worktime.TripPlan;
 import pl.khamutouskaya.truckdispatch.algorithm.worktime.WorkTimeSimulation;
 import pl.khamutouskaya.truckdispatch.algorithm.worktime.WorkTimeSimulator;
-import pl.khamutouskaya.truckdispatch.config.AssignmentWeightsProperties;
 import pl.khamutouskaya.truckdispatch.domain.AssignmentResult;
 import pl.khamutouskaya.truckdispatch.domain.Driver;
 import pl.khamutouskaya.truckdispatch.domain.DriverStatus;
@@ -37,6 +36,7 @@ import pl.khamutouskaya.truckdispatch.dto.AssignmentDecision.RankedCandidate;
 import pl.khamutouskaya.truckdispatch.dto.AssignmentDecision.RejectedDriver;
 import pl.khamutouskaya.truckdispatch.dto.AssignmentDecision.TripSummary;
 import pl.khamutouskaya.truckdispatch.exception.ConflictException;
+import pl.khamutouskaya.truckdispatch.exception.ErrorCode;
 import pl.khamutouskaya.truckdispatch.exception.NotFoundException;
 import pl.khamutouskaya.truckdispatch.repository.AssignmentResultRepository;
 import pl.khamutouskaya.truckdispatch.repository.DriverRepository;
@@ -75,7 +75,7 @@ public class AssignmentService {
     private final RoadEdgeRepository roadEdgeRepository;
     private final RoadGraphService roadGraphService;
     private final RouteService routeService;
-    private final AssignmentWeightsProperties weights;
+    private final AssignmentWeightsService assignmentWeightsService;
     private final JsonMapper jsonMapper;
     private final Clock clock;
 
@@ -94,7 +94,13 @@ public class AssignmentService {
     @Transactional
     public AssignmentDecision assign(Long orderId) {
         TransportOrder order = findNewOrder(orderId);
-        Evaluation evaluation = evaluate(order, LocalDateTime.now(clock));
+        LocalDateTime now = LocalDateTime.now(clock);
+        if (order.getLoadingDeadline().isBefore(now)) {
+            throw new ConflictException(ErrorCode.LOADING_DEADLINE_PASSED,
+                    "Loading deadline " + order.getLoadingDeadline() + " has already passed; no driver can make it",
+                    Map.of("loadingDeadline", order.getLoadingDeadline()));
+        }
+        Evaluation evaluation = evaluate(order, now);
         AssignmentDecision decision = evaluation.decision();
 
         AssignmentResult result = new AssignmentResult();
@@ -135,7 +141,7 @@ public class AssignmentService {
     }
 
     private Evaluation evaluate(TransportOrder order, LocalDateTime now) {
-        List<WeightedCriterion> criteria = weights.toCriteria();
+        List<WeightedCriterion> criteria = assignmentWeightsService.currentCriteria();
         Map<Long, Vehicle> vehicleByDriverId = vehiclesByDriverId();
 
         List<Candidate> candidates = new ArrayList<>();
@@ -144,14 +150,14 @@ public class AssignmentService {
 
         for (Driver driver : driverRepository.findByStatus(DriverStatus.AVAILABLE, BY_ID)) {
             Vehicle vehicle = vehicleByDriverId.get(driver.getId());
-            Optional<RejectionReason> quickRejection = CandidateFilter.quickCheck(driver, vehicle, order);
-            if (quickRejection.isPresent()) {
-                rejected.add(rejectedDriver(driver, vehicle, quickRejection.get()));
+            List<RejectionReason> missingData = CandidateFilter.dataCheck(driver, vehicle);
+            if (!missingData.isEmpty()) {
+                rejected.add(rejectedDriver(driver, vehicle, missingData));
                 continue;
             }
             CandidateEvaluation evaluation = evaluateCandidate(driver, vehicle, order, now);
-            if (evaluation.rejection() != null) {
-                rejected.add(rejectedDriver(driver, vehicle, evaluation.rejection()));
+            if (!evaluation.rejections().isEmpty()) {
+                rejected.add(rejectedDriver(driver, vehicle, evaluation.rejections()));
             } else {
                 candidates.add(evaluation.candidate());
                 detailsByDriverId.put(driver.getId(), evaluation.details());
@@ -176,9 +182,9 @@ public class AssignmentService {
     }
 
     // Wynik dla jednego kierowcy po szybkim odsiewie: albo kandydat, albo powód odrzucenia
-    private record CandidateEvaluation(Candidate candidate, CandidateDetails details, RejectionReason rejection) {
-        static CandidateEvaluation rejectedFor(RejectionReason reason) {
-            return new CandidateEvaluation(null, null, reason);
+    private record CandidateEvaluation(Candidate candidate, CandidateDetails details, List<RejectionReason> rejections) {
+        static CandidateEvaluation rejectedFor(List<RejectionReason> reasons) {
+            return new CandidateEvaluation(null, null, reasons);
         }
     }
 
@@ -194,6 +200,7 @@ public class AssignmentService {
         long unloadingNodeId = order.getUnloadingNode().getId();
         double lat = driver.getCurrentLat();
         double lon = driver.getCurrentLon();
+        List<RejectionReason> reasons = new ArrayList<>(CandidateFilter.quickCheck(driver, vehicle, order));
 
         // Dwie trasy — pustym do załadunku, z ładunkiem do rozładunku (inne ograniczenia i prędkości)
         VehicleProfile empty = VehicleProfile.empty(vehicle.getHeightM(), vehicle.getEmptyWeightKg());
@@ -202,7 +209,8 @@ public class AssignmentService {
         Optional<Route> toLoading = routeService.routeFromPosition(lat, lon, loadingNodeId, empty);
         Optional<Route> toUnloading = routeService.routeBetweenNodes(loadingNodeId, unloadingNodeId, loaded);
         if (toLoading.isEmpty() || toUnloading.isEmpty()) {
-            return CandidateEvaluation.rejectedFor(RejectionReason.NO_ROUTE);
+            reasons.add(RejectionReason.NO_ROUTE);
+            return CandidateEvaluation.rejectedFor(reasons);
         }
 
         // Symulacja czasu pracy (przerwy i odpoczynki 561/2006)
@@ -213,9 +221,9 @@ public class AssignmentService {
         WorkTimeSimulation simulation = WorkTimeSimulator.simulate(now, state, plan);
 
         // Filtr twardy: terminy i limit tygodniowy
-        Optional<RejectionReason> lateRejection = CandidateFilter.deadlineCheck(simulation, order);
-        if (lateRejection.isPresent()) {
-            return CandidateEvaluation.rejectedFor(lateRejection.get());
+        reasons.addAll(CandidateFilter.deadlineCheck(simulation, order));
+        if (!reasons.isEmpty()) {
+            return CandidateEvaluation.rejectedFor(reasons);
         }
 
         // K1 = wszystkie puste kilometry: pierwsza mila (prosta × 1,3) + trasa po grafie
@@ -230,7 +238,7 @@ public class AssignmentService {
                 simulation.breakCount(), simulation.restCount(), simulation.endState().remainingDrivingTodayMin());
         CandidateDetails details = new CandidateDetails(vehicle.getRegistrationNumber(), trip,
                 toLoading.get(), empty, toUnloading.get(), loaded);
-        return new CandidateEvaluation(candidate, details, null);
+        return new CandidateEvaluation(candidate, details, List.of());
     }
 
     private static RankedCandidate rankedCandidate(int rank, CandidateScore score, List<WeightedCriterion> criteria,
@@ -276,8 +284,9 @@ public class AssignmentService {
         TransportOrder order = transportOrderRepository.findById(orderId)
                 .orElseThrow(() -> new NotFoundException("Order", orderId));
         if (order.getStatus() != OrderStatus.NEW) {
-            throw new ConflictException("Only orders in status NEW can be assigned; order " + orderId
-                    + " is " + order.getStatus());
+            throw new ConflictException(ErrorCode.ORDER_NOT_NEW,
+                    "Only orders in status NEW can be assigned; order " + orderId + " is " + order.getStatus(),
+                    Map.of("status", order.getStatus().name()));
         }
         return order;
     }
@@ -293,8 +302,8 @@ public class AssignmentService {
         return result;
     }
 
-    private static RejectedDriver rejectedDriver(Driver driver, Vehicle vehicle, RejectionReason reason) {
+    private static RejectedDriver rejectedDriver(Driver driver, Vehicle vehicle, List<RejectionReason> reasons) {
         return new RejectedDriver(driver.getId(), driver.getFullName(),
-                vehicle != null ? vehicle.getRegistrationNumber() : null, reason);
+                vehicle != null ? vehicle.getRegistrationNumber() : null, reasons);
     }
 }

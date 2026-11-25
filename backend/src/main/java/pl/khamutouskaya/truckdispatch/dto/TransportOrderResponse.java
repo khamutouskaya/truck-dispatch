@@ -23,10 +23,16 @@ public record TransportOrderResponse(
         OrderStatus status,
         Long assignedDriverId,
         String assignedDriverName,
+        String assignedVehicleRegistration,
         LocalDateTime createdAt
 ) {
-    // Wywoływać wewnątrz transakcji: punkty i kierowca to relacje LAZY
-    public static TransportOrderResponse from(TransportOrder order) {
+    /**
+     * Wywoływać wewnątrz transakcji: punkty i kierowca to relacje LAZY.
+     *
+     * @param assignedVehicleRegistration numer pojazdu przydzielonego kierowcy albo null (brak kierowcy lub pojazdu);
+     *                                    zlecenie nie przechowuje pojazdu, więc podaje go serwis
+     */
+    public static TransportOrderResponse from(TransportOrder order, String assignedVehicleRegistration) {
         Driver driver = order.getAssignedDriver();
         return new TransportOrderResponse(
                 order.getId(),
@@ -44,6 +50,7 @@ public record TransportOrderResponse(
                 order.getStatus(),
                 driver == null ? null : driver.getId(),
                 driver == null ? null : driver.getFullName(),
+                assignedVehicleRegistration,
                 order.getCreatedAt()
         );
     }

@@ -23,6 +23,8 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
 
     Optional<Vehicle> findByDriverId(Long driverId);
 
+    List<Vehicle> findByType(VehicleType type);
+
     // Czy istnieje choć jeden pojazd danego typu zdolny przewieźć ładunek
     boolean existsByTypeAndCapacityKgGreaterThanEqualAndVolumeM3GreaterThanEqual(
             VehicleType type, int capacityKg, double volumeM3);

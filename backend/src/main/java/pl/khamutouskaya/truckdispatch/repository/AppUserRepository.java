@@ -7,6 +7,5 @@ import java.util.Optional;
 
 public interface AppUserRepository extends JpaRepository<AppUser, Long> {
 
-    // Logowanie: konto po nazwie użytkownika
     Optional<AppUser> findByUsername(String username);
 }

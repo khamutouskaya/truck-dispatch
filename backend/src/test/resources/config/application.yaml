@@ -4,3 +4,7 @@ simulator:
   enabled: false
   noise: 0.0
   congestion: []
+
+spring:
+  datasource:
+    url: jdbc:tc:postgresql:16:///truckdispatch?TC_DAEMON=true

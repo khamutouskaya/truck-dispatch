@@ -76,7 +76,7 @@ class CandidateFilterTest {
         Vehicle refrigerator = vehicle(VehicleType.REFRIGERATOR, 24_000, 90);
 
         assertThat(CandidateFilter.quickCheck(driverAt(LODZ_LAT, LODZ_LON), refrigerator, order()))
-                .contains(RejectionReason.TYPE);
+                .containsExactly(RejectionReason.TYPE);
     }
 
     @Test
@@ -99,18 +99,21 @@ class CandidateFilterTest {
     }
 
     @Test
-    void missingVehicleOrLocationIsRejectedFirst() {
-        assertThat(CandidateFilter.quickCheck(driverAt(WARSZAWA_LAT, WARSZAWA_LON), null, order()))
-                .contains(RejectionReason.NO_VEHICLE);
-        assertThat(CandidateFilter.quickCheck(driverAt(null, null), TILT_24T, order()))
-                .contains(RejectionReason.NO_LOCATION);
+    void missingVehicleAndLocationAreBothReported() {
+        assertThat(CandidateFilter.dataCheck(driverAt(WARSZAWA_LAT, WARSZAWA_LON), null))
+                .containsExactly(RejectionReason.NO_VEHICLE);
+        assertThat(CandidateFilter.dataCheck(driverAt(null, null), TILT_24T))
+                .containsExactly(RejectionReason.NO_LOCATION);
+        assertThat(CandidateFilter.dataCheck(driverAt(null, null), null))
+                .containsExactly(RejectionReason.NO_VEHICLE, RejectionReason.NO_LOCATION);
+        assertThat(CandidateFilter.dataCheck(driverAt(WARSZAWA_LAT, WARSZAWA_LON), TILT_24T)).isEmpty();
     }
 
     @Test
-    void firstFailingCheckDecidesTheReason() {
-        // Zły typ i za mało ładowności — zgłaszamy TYPE, bo jest sprawdzany wcześniej
-        assertThat(CandidateFilter.quickCheck(driverAt(LODZ_LAT, LODZ_LON),
-                vehicle(VehicleType.FLATBED, 5_000, 10), order())).contains(RejectionReason.TYPE);
+    void everyFailingQuickCheckIsReported() {
+        assertThat(CandidateFilter.quickCheck(driverAt(59.9, 30.3),
+                vehicle(VehicleType.FLATBED, 5_000, 10), order()))
+                .containsExactly(RejectionReason.TYPE, RejectionReason.CAPACITY, RejectionReason.TOO_FAR);
     }
 
     // --- Filtr twardy po symulacji ---
@@ -132,7 +135,9 @@ class CandidateFilterTest {
         // Najbliższy kierowca: 38 min jazdy, ale po 20 min odpoczynek 11 h → 19:38 > 12:00
         WorkTimeSimulation b = simulate(new DriverWorkState(520, 2400, 60), 38);
 
-        assertThat(CandidateFilter.deadlineCheck(b, order())).contains(RejectionReason.LATE_LOADING);
+        // Koniec rozładunku 01:22 następnego dnia > 20:00 — oba terminy przekroczone
+        assertThat(CandidateFilter.deadlineCheck(b, order()))
+                .containsExactly(RejectionReason.LATE_LOADING, RejectionReason.LATE_DELIVERY);
     }
 
     @Test

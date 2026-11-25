@@ -106,8 +106,19 @@ public record AssignmentDecision(
      * Odrzucony kierowca.
      *
      * @param vehicleRegistration null, gdy kierowca nie ma pojazdu (NO_VEHICLE)
-     * @param reason              powód odrzucenia — w React tłumaczony na tekst dla dyspozytora
+     * @param reason              pierwszy powód (pole z wcześniejszych decyzji, zapisanych z jednym powodem)
+     * @param reasons             wszystkie niespełnione warunki, w kolejności sprawdzania — w React tłumaczone na tekst
      */
-    public record RejectedDriver(long driverId, String driverName, String vehicleRegistration, RejectionReason reason) {
+    public record RejectedDriver(long driverId, String driverName, String vehicleRegistration, RejectionReason reason,
+                                 List<RejectionReason> reasons) {
+
+        public RejectedDriver {
+            reasons = reasons == null || reasons.isEmpty() ? List.of(reason) : List.copyOf(reasons);
+        }
+
+        public RejectedDriver(long driverId, String driverName, String vehicleRegistration,
+                              List<RejectionReason> reasons) {
+            this(driverId, driverName, vehicleRegistration, reasons.getFirst(), reasons);
+        }
     }
 }

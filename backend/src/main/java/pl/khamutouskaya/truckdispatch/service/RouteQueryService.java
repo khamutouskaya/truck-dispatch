@@ -15,6 +15,7 @@ import pl.khamutouskaya.truckdispatch.domain.RoadEdge;
 import pl.khamutouskaya.truckdispatch.domain.Vehicle;
 import pl.khamutouskaya.truckdispatch.dto.RouteResponse;
 import pl.khamutouskaya.truckdispatch.exception.ConflictException;
+import pl.khamutouskaya.truckdispatch.exception.ErrorCode;
 import pl.khamutouskaya.truckdispatch.exception.NotFoundException;
 import pl.khamutouskaya.truckdispatch.repository.RoadEdgeRepository;
 import pl.khamutouskaya.truckdispatch.repository.VehicleRepository;
@@ -57,11 +58,17 @@ public class RouteQueryService {
                 : VehicleProfile.empty(vehicle.getHeightM(), vehicle.getEmptyWeightKg());
 
         Route route = algorithm.finder().findRoute(graph, fromNodeId, toNodeId, profile)
-                .orElseThrow(() -> new ConflictException(String.format(Locale.ROOT,
-                        "No route from %s to %s for vehicle %s (height %.1f m, weight %.1f t): "
-                                + "roads are closed by height or weight limits",
-                        graph.node(fromNodeId).name(), graph.node(toNodeId).name(),
-                        vehicle.getRegistrationNumber(), profile.heightM(), profile.totalWeightT())));
+                .orElseThrow(() -> new ConflictException(ErrorCode.NO_ROUTE_FOR_VEHICLE,
+                        String.format(Locale.ROOT,
+                                "No route from %s to %s for vehicle %s (height %.1f m, weight %.1f t): "
+                                        + "roads are closed by height or weight limits",
+                                graph.node(fromNodeId).name(), graph.node(toNodeId).name(),
+                                vehicle.getRegistrationNumber(), profile.heightM(), profile.totalWeightT()),
+                        Map.of("from", graph.node(fromNodeId).name(),
+                                "to", graph.node(toNodeId).name(),
+                                "registrationNumber", vehicle.getRegistrationNumber(),
+                                "heightM", profile.heightM(),
+                                "weightT", profile.totalWeightT())));
 
         return toResponse(graph, route, vehicleId, loaded, algorithm, profile);
     }

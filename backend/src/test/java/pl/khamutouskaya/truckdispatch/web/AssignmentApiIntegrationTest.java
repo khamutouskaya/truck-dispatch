@@ -66,7 +66,14 @@ class AssignmentApiIntegrationTest {
         // POST /api/orders: wynik algorytmu widać od razu w statusie
         assertThat(order.get("status").asString()).isEqualTo("ASSIGNED");
         assertThat(order.get("assignedDriverName").asString()).isEqualTo("Jan Kowalski");
+        // Pojazd kierowcy z danych testowych (V3) — do kolumny "Kierowca" na liście zleceń
+        assertThat(order.get("assignedVehicleRegistration").asString()).isEqualTo("WX 12345");
         long id = order.get("id").asLong();
+
+        // Lista zleceń podaje ten sam numer (pojazdy wczytane jednym zapytaniem)
+        mockMvc.perform(get("/api/orders"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.id == %d)].assignedVehicleRegistration".formatted(id)).value("WX 12345"));
 
         // Ekran „Szczegóły zlecenia”: ranking z powodami
         mockMvc.perform(get("/api/orders/{id}/assignment", id))
@@ -81,7 +88,9 @@ class AssignmentApiIntegrationTest {
         mockMvc.perform(get("/api/orders/{id}/candidates", id)).andExpect(status().isConflict());
         mockMvc.perform(post("/api/orders/{id}/assign", id))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.title").value("Business rule violation"));
+                .andExpect(jsonPath("$.title").value("Business rule violation"))
+                .andExpect(jsonPath("$.code").value("ORDER_NOT_NEW"))
+                .andExpect(jsonPath("$.params.status").value("ASSIGNED"));
     }
 
     @Test

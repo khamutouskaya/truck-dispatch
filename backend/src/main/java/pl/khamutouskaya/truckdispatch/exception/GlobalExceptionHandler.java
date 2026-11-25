@@ -52,7 +52,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ConflictException.class)
     public ProblemDetail handleConflict(ConflictException ex) {
-        return problem(HttpStatus.CONFLICT, "Business rule violation", ex.getMessage());
+        ProblemDetail problem = problem(HttpStatus.CONFLICT, "Business rule violation", ex.getMessage());
+        problem.setProperty("code", ex.getCode().name());
+        problem.setProperty("params", ex.getParams());
+        return problem;
     }
 
     // Ciało z @Valid @RequestBody nie przeszło walidacji

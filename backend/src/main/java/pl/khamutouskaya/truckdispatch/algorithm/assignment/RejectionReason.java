@@ -2,7 +2,7 @@ package pl.khamutouskaya.truckdispatch.algorithm.assignment;
 
 /**
  * Powód odrzucenia kierowcy — zapisywany dla każdego odrzuconego, żeby dyspozytor widział, dlaczego.
- * Kolejność stałych = kolejność sprawdzania.
+ * Kierowca dostaje wszystkie niespełnione warunki; kolejność stałych = kolejność sprawdzania.
  */
 public enum RejectionReason {
 
